@@ -4,22 +4,21 @@ module PairDict exposing
   , empty, fromDict, fromList
   , rightOf, leftOf, size
   , lefts, rights
-  , Pair, map, insert
+  , insert, map
   , removeLeft, removeRight
   , fold
   , union
   , swapLeftRight
   , dictFromLeft, dictFromRight
-  , encode, encodePair
-  , decode, decodePair
+  , encode, decode
   )
 {-| 
-@docs PairDict, Pair
+@docs PairDict
 
 @docs equal
 
 ## create
-@docs empty, fromDict, fromList, decode, decodePair
+@docs empty, fromDict, fromList, decode
 
 ## access
 @docs rightOf, leftOf
@@ -34,10 +33,12 @@ module PairDict exposing
 @docs removeLeft, removeRight
 
 ## shape
-@docs lefts, rights, swapLeftRight, fold, map, dictFromLeft, dictFromRight, encode, encodePair
+@docs lefts, rights, swapLeftRight, fold, map, dictFromLeft, dictFromRight, encode
 -}
 
 import AssocList as AssocDict
+import Pair exposing (Pair)
+
 import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder)
 
@@ -197,14 +198,6 @@ lefts=
 rights: PairDict left right ->List right
 rights=
   AssocDict.keys <<dictFromRight
-
-
-{-| `left` & `right` as a value-pair
--}
-type alias Pair left right=
-  { left: left
-  , right: right
-  }
 
 {-| Put in a left-right-`Pair`.
 
@@ -428,25 +421,8 @@ dictFromRight (PairDict pairDict)=
   pairDict.fromRight
 
 
-encodePair:
-  (left ->Encode.Value)
-  ->(right ->Encode.Value)
-  ->Pair left right ->Encode.Value
-encodePair encodeLeft encodeRight { left, right }=
-  Encode.object
-    [ ( "left", encodeLeft left )
-    , ( "right", encodeRight right )
-    ]
 
-decodePair:
-  Decoder left ->Decoder right
-  ->Decoder (Pair left right)
-decodePair decodeLeft decodeRight=
-  Decode.map2 Pair
-    (Decode.field "left" decodeLeft)
-    (Decode.field "right" decodeRight)
-
-
+--for encoding / decoding: https://ellie-app.com/bNGv9NS7mJ7a1
 {-| all left-right-`Pair`s. As its only practical use is in `decode`, this is not exposed
 -}
 pairs: PairDict left right ->List (Pair left right)
@@ -459,7 +435,29 @@ pairs=
 
 {-| Convert a `PairDict` to a `Json.Encode.Value`.
 
-    Json.Encode.
+    somePairDict=
+      empty
+      |>insert { left= 1, right= 11 }
+      |>insert { left= 2, right= 22 }
+    Encode.encode 1
+      (encode
+        Encode.int Encode.int
+        somePairDict
+      )
+    {->
+    """
+    [
+     {
+      \"left\": 2,
+      \"right\": 22
+     },
+     {
+      \"left\": 1,
+      \"right\": 11
+     }
+    ]
+    """
+    -}
 -}
 encode:
   (left ->Encode.Value) ->(right ->Encode.Value)
@@ -467,9 +465,29 @@ encode:
 encode encodeLeft encodeRight=
   pairs
   >>Encode.list
-      (encodePair encodeLeft encodeRight)
+      (Pair.encode encodeLeft encodeRight)
 
-{-| A `Decoder PairDict` from a `Json.Encode.Value`
+{-| A `Json.Decode.Decoder` for `PairDict`s, encoded by `encodePair`.
+
+The order of insertion is not reconstructed (see `equal`)
+
+    """
+    [
+     {
+      \"left\": 2,
+      \"right\": 22
+     },
+     {
+      \"left\": 1,
+      \"right\": 11
+     }
+    ]
+    """
+    |>Decode.decodeString
+        (decode Decode.int Decode.int)
+    {->
+    Ok (fromList [ ( 1, 11 ), ( 2, 22 ) ])
+    -}
 -}
 decode:
   Decoder left ->Decoder right
@@ -478,6 +496,6 @@ decode decodeLeft decodeRight=
   Decode.map fromList
     (Decode.list
       (Decode.map (\{ left, right }-> ( left, right ))
-        (decodePair decodeLeft decodeRight)
+        (Pair.decode decodeLeft decodeRight)
       )
     )
