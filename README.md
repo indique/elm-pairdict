@@ -94,4 +94,3 @@ partners=
   |>insert "Alan" "Ann" --wait, this is no duplicate and gets inserted?
 ```
 A `PairDict` ony makes sense, when the **left & right sides describe something different**.
-Apart from that
