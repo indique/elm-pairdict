@@ -153,7 +153,6 @@ rightOf left (PairDict pairDict)=
       empty
       |>insert { left= 'a', right= 'A' }
       |>insert { left= 'b', right= 'B' }
-      |>insert { left= 'c', right= 'C' }
 
     upperCase char=
       rightOf char casedLetters
@@ -167,13 +166,14 @@ leftOf right (PairDict pairDict)=
 
 {-| How many pairs there are.
 
-    size empty --0
+    size empty
+> `0`
     
     size
       (fromList
         (List.range 0 41 |>List.map (\i-> ( i, i )))
       )
-    --42
+> `42`
 -}
 size: PairDict left right ->Int
 size (PairDict pairDict)=
@@ -204,10 +204,11 @@ rights=
 If either **value** is already **present**, the `PairDict` is **unchanged**.
 
     empty
-    |>insert { left= "(", right= ")" }
-    |>insert { right= "fire", left= "water" }
-    --fromList
-    --  [ ( "(", ")" ) ( "water", "fire" ) ]
+    |>insert { left= 'b', right= 'B' } --puts it in 
+    |>insret { right= 'A', left= 'a' } --puts it in
+    |>insert { left= 'b', right= 'C' } --ignored, the left value already exists
+    |>insert { left= 'c', right= 'A' } --ignored, the right value already exists
+    |>insert { left= 'c', right= 'C' } --puts it in
 -}
 insert:
   Pair left right
@@ -280,7 +281,7 @@ A fold in the other direction doesn't exist, as association-`Dict`s should rarel
             acc ++[ String.fromList [ left, right ] ]
           )
           []
-      --[ "{}", "()" ]
+> `[ "{}", "()" ]`
 -}
 fold:
   (Pair left right ->acc ->acc)
@@ -297,7 +298,8 @@ If **`left` does not exist**, the `PairDict` is **unchanged**
 
     empty
     |>insert "(" ")"
-    |>removeLeft "("
+    |>removeLeft ")" --unchanged, ")" is not a left value
+    |>removeLeft "(" --removes { left= "(", right= ")" }
     --empty
 -}
 removeLeft:
@@ -317,8 +319,9 @@ removeLeft left pairDict=
 If `right` does not exist, the `PairDict` is unchanged
 
     empty
-    |>insert "(" ")"
-    |>removeRight ")"
+    |>insert { left= "(", right= ")" }
+    |>removeRight "(" --unchanged, "(" is not a right value
+    |>removeRight ")" --removes { left= "(", right= ")" }
     --empty
 -}
 removeRight:
@@ -359,12 +362,7 @@ remove
         ]
     mathSymbolNames=
       digitNames
-      |>map
-          (\{left,right}->
-            { left= String.fromInt left
-            , right= right
-            }
-          )
+      |>map (Pair.mapLeft String.fromInt)
       |>insert { left= "+", right= "plus" }
 -}
 map:
@@ -444,7 +442,8 @@ pairs=
         Encode.int Encode.int
         somePairDict
       )
-    {->
+
+
     """
     [
      {
@@ -457,7 +456,6 @@ pairs=
      }
     ]
     """
-    -}
 -}
 encode:
   (left ->Encode.Value) ->(right ->Encode.Value)
@@ -485,9 +483,8 @@ The order of insertion is not reconstructed (see `equal`)
     """
     |>Decode.decodeString
         (decode Decode.int Decode.int)
-    {->
-    Ok (fromList [ ( 1, 11 ), ( 2, 22 ) ])
-    -}
+
+> `Ok (fromList [ ( 1, 11 ), ( 2, 22 ) ])`
 -}
 decode:
   Decoder left ->Decoder right
@@ -499,3 +496,4 @@ decode decodeLeft decodeRight=
         (Pair.decode decodeLeft decodeRight)
       )
     )
+
