@@ -7,14 +7,7 @@ module Pair exposing
 @docs Pair
 
 ### create
-through the constructor
-```elm
-{ left= {-leftValue-}, right= {-rightValue-} }
-```
-or @docs decode
-
-### access
-through `.left` & `.right`
+through the constructor or @docs decode
 
 ### shape
 @docs mapLeft, mapRight, encode
@@ -25,15 +18,12 @@ import Json.Decode as Decode exposing (Decoder)
 
 
 {-| `left` & `right` as a value-pair
-To create, use
 
-    { left= {-leftValue-}, right= {-rightValue-} }
+    openClosedCurlyBracePair=
+      { left= '{', right= '}' }
 
-access through
-
-    partners= { left= "light blue", right= "lightBlue" }
-    leftValue= .left pair
-    rightValue= .right pair
+    openCurly= .left openClosedCurlyBracePair
+    closedCurly= .right openClosedCurlyBracePair
 -}
 type alias Pair left right=
   { left: left
