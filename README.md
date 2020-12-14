@@ -14,7 +14,7 @@ lowerUppercaseLetters=
 upperCase char=
   rightOf char lowerUppercaseLetters
 ```
-try in the [ellie of the example cased letters](https://ellie-app.com/bNFVKGPWrBDa1)
+try in the [ellie for the example cased letters](https://ellie-app.com/bNFVKGPWrBDa1)
 
 ## Example: periodic table
 
@@ -70,7 +70,7 @@ answers=
     , ( "Are you a robot", "I think the most human answer is 'Haha... yes'" )
     ]
 ```
-please use a dict where it is more appropriate: `Dict`s are for one-way access
+please use a `Dict` where it is more appropriate: **`Dict`s are for one-way access**
 
 ## Example: translation, synonymes...
 ```elm
@@ -80,7 +80,18 @@ englishGerman=
     , ( "git", "Schwachkopf" )
     ]
 ```
-A right → left and backwards relationship isn't fitting,
-as left or right can have multiple translations!
+A right → left and backwards relationship is only fitting,
+when **left or right don't have multiple translations**.
 
 Please take a look at [elm-bidict](https://github.com/Janiczek/elm-bidict)
+
+## Example: partners, opposites...
+```elm
+partners=
+  empty
+  |>insert "Ann" "Alan"
+  |>insert "Alex" "Alastair"
+  |>insert "Alan" "Ann" --wait, this is no duplicate and gets inserted?
+```
+A `PairDict` ony makes sense, when the **left & right sides describe something different**.
+Apart from that
