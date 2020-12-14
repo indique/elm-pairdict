@@ -1,16 +1,23 @@
 module Pair exposing
   ( Pair
+  , mapLeft, mapRight
   , encode, decode
   )
 {-|
 @docs Pair
 
-## create
-through the exposed constructor `{ left, right }` or
-@docs decode
+### create
+through the constructor
+```elm
+{ left= {-leftValue-}, right= {-rightValue-} }
+```
+or @docs decode
 
-## shape
-@docs encode
+### access
+through `.left` & `.right`
+
+### shape
+@docs mapLeft, mapRight, encode
 -}
 
 import Json.Encode as Encode
@@ -21,11 +28,74 @@ import Json.Decode as Decode exposing (Decoder)
 To create, use
 
     { left= {-leftValue-}, right= {-rightValue-} }
+
+access through
+
+    partners= { left= "light blue", right= "lightBlue" }
+    leftValue= .left pair
+    rightValue= .right pair
 -}
 type alias Pair left right=
   { left: left
   , right: right
   }
+
+{-| map the `left` value in a `Pair`
+
+    { left= 128522, right= "smile" }
+    |>mapLeft Char.fromCode
+
+> `{ left= '😊', right= "smile" }`
+
+This is handy when using maps or folds etc.
+
+    namedEmojiCodes=
+      PairDict.empty
+      |>PairDict.insert { left= 127824, right= "pear" }
+      |>PairDict.insert { left= 127795, right= "tree" }
+    namedEmojis=
+      namedEmojiCodes
+      |>PairDict.map (Pair.mapLeft String.fromInt)
+
+> `PairDict.fromList [ ( '🍐', "pear" ), ( '🌳', "tree" ) ]`
+-}
+mapLeft:
+  (left ->resultLeft)
+  ->Pair left right
+  ->Pair resultLeft right
+mapLeft alter { left, right }=
+  { left= alter left
+  , right= right
+  }
+
+{-| map the `right` value in a `Pair`
+
+    { left= "smile", right= 128522 }
+    |>mapRight Char.fromCode
+
+> `{ left= "smile", right= '😊' }`
+
+This is handy when using maps or folds etc.
+
+    namedEmojiCodes=
+      PairDict.empty
+      |>PairDict.insert { left= "pear", right= 127824 }
+      |>PairDict.insert {  left= "tree", right= 127795 }
+    namedEmojis=
+      namedEmojiCodes
+      |>PairDict.map (Pair.mapLeft String.fromInt)
+
+> `PairDict.fromList [ ( "pear", '🍐' ), ( "tree", '🌳' ) ]`
+-}
+mapRight:
+  (right ->resultRight)
+  ->Pair left right
+  ->Pair left resultRight
+mapRight alter { left, right }=
+  { left= left
+  , right= alter right
+  }
+
 
 {-| Convert a `Pair` to a `Json.Encode.Value`.
 
@@ -34,14 +104,13 @@ type alias Pair left right=
         Encode.int Encode.int
         { left= 1, right= 11 }
       )
-    {->
+
     """
     {
      \"left\": 1,
      \"right\": 11
     }
     """
-    -}
 -}
 encode:
   (left ->Encode.Value)
@@ -63,7 +132,9 @@ encode encodeLeft encodeRight { left, right }=
     """
     |>Decode.decodeString
         (Pair.decode Decode.int Decode.int)
-    --> Ok { left= 1, right= 11 }
+
+
+> `Ok { left= 1, right= 11 }`
 -}
 decode:
   Decoder left ->Decoder right
