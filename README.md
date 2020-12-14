@@ -1,19 +1,20 @@
 # PairDict
-lookup value-pairs from the left or the right
+Lookup value-pairs from the left or the right.
 
 ## 👍 How to `PairDict`
 
 ## Example: cased letters
 ```elm
-casedLetters=
+lowerUppercaseLetters=
   empty
   |>insert { left= 'a', right= 'A' }
   |>insert { left= 'b', right= 'B' }
   |>insert { left= 'c', right= 'C' }
 
 upperCase char=
-  rightOf char casedLetters
+  rightOf char lowerUppercaseLetters
 ```
+try in the [ellie of the brackets example](https://ellie-app.com/bNFGFYtdbDBa1)
 
 ## Example: brackets
 You have pairs that belong together:
