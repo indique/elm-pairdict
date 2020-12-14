@@ -7,7 +7,9 @@ module Pair exposing
 @docs Pair
 
 ### create
-through the constructor or @docs decode
+@docs decode
+
+or through the constructor
 
 ### shape
 @docs mapLeft, mapRight, encode
