@@ -31,7 +31,7 @@ elementProtons=
   |>insert { left= Helium, right= 2 }
 
 elementsByProtons=
-  dictFromLeft elementProtons
+  dictFromRight elementProtons
 ```
 
 ## Example: brackets
