@@ -14,7 +14,25 @@ lowerUppercaseLetters=
 upperCase char=
   rightOf char lowerUppercaseLetters
 ```
-try in the [ellie of the brackets example](https://ellie-app.com/bNFGFYtdbDBa1)
+try in the [ellie of the example cased letters](https://ellie-app.com/bNFVKGPWrBDa1)
+
+## Example: element table
+
+```elm
+type Element=
+  Hydrogen
+  | Helium
+
+type alias ProtonCount= Int
+
+elementProtons=
+  empty
+  |>insert { left= Hydrogen, right= 1 }
+  |>insert { left= Helium, right= 2 }
+
+elementsByProtons=
+  dictFromLeft elementProtons
+```
 
 ## Example: brackets
 You have pairs that belong together:
