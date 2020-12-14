@@ -422,7 +422,7 @@ dictFromRight (PairDict pairDict)=
 
 
 
---for encoding / decoding: https://ellie-app.com/bNKgXj4Tw5Ca1
+--for encoding / decoding: https://ellie-app.com/bNL2HsCtswQa1
 {-| all left-right-`Pair`s. As its only practical use is in `decode`, this is not exposed
 -}
 pairs: PairDict left right ->List (Pair left right)
