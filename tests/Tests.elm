@@ -387,6 +387,26 @@ suite=
               Expect.equal
                 ([ 'c', 'a', 'x' ] |>List.map upperCase)
                 ([ Just 'C', Just 'A', Nothing ])
+        , test "periodic table"
+          <|\()->
+              let
+                elementProtons=
+                  empty
+                  |>PairDict.insert { left= Hydrogen, right= 1 }
+                  |>PairDict.insert { left= Helium, right= 2 }
+
+                elementsByProtons=
+                  PairDict.dictFromRight elementProtons
+              in
+              Expect.equal
+                [ Just Helium, Just Hydrogen ]
+                [ AssocDict.get 2 elementsByProtons
+                , AssocDict.get 1 elementsByProtons
+                ]
         ]
     ]
+type Element=
+  Hydrogen
+  | Helium
+type alias ProtonCount= Int
 

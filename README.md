@@ -16,7 +16,7 @@ upperCase char=
 ```
 try in the [ellie of the example cased letters](https://ellie-app.com/bNFVKGPWrBDa1)
 
-## Example: element table
+## Example: periodic table
 
 ```elm
 type Element=
