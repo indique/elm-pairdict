@@ -25,5 +25,4 @@ commits look like this:
 | mark        | means         |
 | :---------- | :------------ |
 | #...        | see           |
-| ... → ...   | is now / into |
 | ! ...       | **attention** |
