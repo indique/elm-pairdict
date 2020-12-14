@@ -173,6 +173,24 @@ suite=
                         (empty |>PairDict.insert at1
                         |>PairDict.rightOf at1.left 
                         )
+                , test "rightOf left is Nothing if not of inserted pair"
+                  <|\()->
+                      Expect.equal Nothing
+                        (empty |>PairDict.insert at1
+                        |>PairDict.rightOf at0.left 
+                        )
+                , test "leftOf right is Just left of inserted pair"
+                  <|\()->
+                      Expect.equal (Just at1.left)
+                        (empty |>PairDict.insert at1
+                        |>PairDict.leftOf at1.right 
+                        )
+                , test "leftOf right is Nothing if not of inserted pair"
+                  <|\()->
+                      Expect.equal Nothing
+                        (empty |>PairDict.insert at1
+                        |>PairDict.leftOf at0.right 
+                        )
                 ]
             , test "union example"
               <|\()->
