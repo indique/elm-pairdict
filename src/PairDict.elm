@@ -1,21 +1,25 @@
 module PairDict exposing
   ( PairDict
+  , equal
   , empty, fromDict, fromList
   , rightOf, leftOf, size
   , lefts, rights
   , Pair, map, insert
   , removeLeft, removeRight
-  , foldr, foldl
+  , fold
   , union
   , swapLeftRight
-  , toDict
+  , dictFromLeft, dictFromRight
+  , encode, encodePair
+  , decode, decodePair
   )
 {-| 
 @docs PairDict, Pair
 
+@docs equal
 
 ## create
-@docs empty, fromDict, fromList
+@docs empty, fromDict, fromList, decode, decodePair
 
 ## access
 @docs rightOf, leftOf
@@ -29,75 +33,96 @@ module PairDict exposing
 ## out
 @docs removeLeft, removeRight
 
-## transform
-@docs lefts, rights, swapLeftRight, foldr, foldl, map, toDict
+## shape
+@docs lefts, rights, swapLeftRight, fold, map, dictFromLeft, dictFromRight, encode, encodePair
 -}
 
---**remove me!** publish https://korban.net/posts/elm/2018-10-02-basic-steps-publish-package-elm-19/
+import AssocList as AssocDict
+import Json.Encode as Encode
+import Json.Decode as Decode exposing (Decoder)
 
-import Dict exposing (Dict)
 
 {-| Want to look up value-pairs from the left or the right?
 
+Like [assoc-list](https://github.com/pzp1997/assoc-list),
+a `PairDict` allows for anything as `left` or `right` values except for functions and things that contain functions.
+
 ## Example: cased letters
-    casedLetters=
+    lowerUppercaseLetters=
       empty
       |>insert { left= 'a', right= 'A' }
       |>insert { left= 'b', right= 'B' }
       |>insert { left= 'c', right= 'C' }
 
     upperCase char=
-      rightOf char casedLetters
+      rightOf char lowerUppercaseLetters
 -}
 type PairDict left right=
   PairDict
-    { fromLeft: Dict left right
-    , fromRight: Dict right left
+    { fromLeft: AssocDict.Dict left right
+    , fromRight: AssocDict.Dict right left
     }
 
-{-| start with an empty `PairDict`
+{-| using (==) built-in equality is often not useful in the context of association-dicts.
 
-    empty --fromList []
+Ignoring insertion order: do these 2 `PairDict`s have the same size and identical `Pair`s?
+
+    letterCodes=
+      fromList [ ( 'a', 0 ), ( 'b', 1 ) ]
+    fancyCompetingLetterCodes=
+      fromList [ ( 'b', 1 ), ( 'a', 0 ) ]
+    
+    equal
+      letterCodes
+      fancyCompetingLetterCodes
+    --> True
+-}
+equal:
+  PairDict left right ->PairDict left right ->Bool
+equal pairDictA pairDictB=
+  AssocDict.eq
+    (dictFromLeft pairDictA)
+    (dictFromLeft pairDictB)
+
+{-| A `PairDict` with no elements
 -}
 empty: PairDict left right
 empty=
   PairDict
-    { fromLeft= Dict.empty
-    , fromRight= Dict.empty
+    { fromLeft= AssocDict.empty
+    , fromRight= AssocDict.empty
     }
 
 {-| Create a `PairDict` conveniently from `Pair`-`Tuple`s. `left` is the first, `right` is the second.
 If right or left values are given multiple times, the value **first** in the `List` is **prefered**.
     
     lowerToUpperLetters=
-      Dict.empty
-      |>Dict.insert 'a' 'A'
-      |>Dict.insert 'b' 'B'
+      AssocList.Dict.empty
+      |>AssocList.Dict.insert 'a' 'A'
+      |>AssocList.Dict.insert 'b' 'B'
 
     lowerUpperLetters= fromDict lowerToUpperLetters
 -}
 fromDict:
-  Dict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
+  AssocDict.Dict left right ->PairDict left right
 fromDict=
-  Dict.foldl
+  AssocDict.foldl
     (\k v-> insert ({ left= k, right= v }))
     empty
 
-{-| Create a `PairDict` conveniently from `Tuple`s. `left` is the first, `right` is the second.
+{-| Create a `PairDict` _conveniently_ from `Tuple`s. `left` is the first, `right` is the second.
 If right or left values are given multiple times, the value **first** in the `List` is **prefered**.
     
     fromList
-      [ ( 'b', 'B' ) --+ { left= 'b', right= 'B' }
-      , ( 'a', 'A' ) --+ { left= 'a', right= 'A' }
+      [ ( 'b', 'B' ) --insert { left= 'b', right= 'B' }
+      , ( 'a', 'A' ) --insert { left= 'a', right= 'A' }
       , ( 'b', 'C' ) --ignored, as the left value already exists
       , ( 'c', 'A' ) --ignored, as the right value already exists
-      , ( 'c', 'C' ) --+ { left= 'c', right= 'C' }
+      , ( 'c', 'C' ) --insert { left= 'c', right= 'C' }
       ]
 -}
 fromList:
-  List ( comparableLeft, comparableRight )
-  ->PairDict comparableLeft comparableRight
+  List ( left, right ) ->PairDict left right
 fromList=
   List.foldl
     (\( v0, v1 )-> insert { left= v0, right= v1 })
@@ -112,14 +137,14 @@ fromList=
       |>insert { left= 'b', right= 'B' }
 
     lowerCase char=
-      Dict.leftOf char casedLetters
+      leftOf char casedLetters
 -}
 rightOf:
-  comparableLeft
-  ->PairDict comparableLeft comparableRight
-  ->Maybe comparableRight
+  left
+  ->PairDict left right
+  ->Maybe right
 rightOf left (PairDict pairDict)=
-  Dict.get left pairDict.fromLeft
+  AssocDict.get left pairDict.fromLeft
 
 {-| `Just` the right value if the left value is present in the `PairDict`, else `Nothing`
 
@@ -133,11 +158,11 @@ rightOf left (PairDict pairDict)=
       rightOf char casedLetters
 -}
 leftOf:
-  comparableRight
-  ->PairDict comparableLeft comparableRight
-  ->Maybe comparableLeft
+  right
+  ->PairDict left right
+  ->Maybe left
 leftOf right (PairDict pairDict)=
-  Dict.get right pairDict.fromRight
+  AssocDict.get right pairDict.fromRight
 
 {-| How many pairs there are.
 
@@ -149,9 +174,9 @@ leftOf right (PairDict pairDict)=
       )
     --42
 -}
-size: PairDict comparableLeft comparableRight ->Int
+size: PairDict left right ->Int
 size (PairDict pairDict)=
-  Dict.size pairDict.fromLeft
+  AssocDict.size pairDict.fromLeft
 
 {-| values on the left
 
@@ -160,8 +185,8 @@ size (PairDict pairDict)=
     opening= lefts brackets
 -}
 lefts: PairDict left right ->List left
-lefts (PairDict pairDict)=
-  Dict.keys pairDict.fromLeft
+lefts=
+  AssocDict.keys <<dictFromLeft
 
 {-| values on the right
 
@@ -170,19 +195,20 @@ lefts (PairDict pairDict)=
     closing= rights brackets
 -}
 rights: PairDict left right ->List right
-rights (PairDict pairDict)=
-  Dict.keys pairDict.fromRight
+rights=
+  AssocDict.keys <<dictFromRight
 
 
 {-| `left` & `right` as a value-pair
 -}
-type alias Pair comparableLeft comparableRight=
-  { left: comparableLeft
-  , right: comparableRight
+type alias Pair left right=
+  { left: left
+  , right: right
   }
 
-{-| Put in a left-right-`Pair`
-If either value is already present, the **dict is unchanged**.
+{-| Put in a left-right-`Pair`.
+
+If either **value** is already **present**, the `PairDict` is **unchanged**.
 
     empty
     |>insert { left= "(", right= ")" }
@@ -191,80 +217,63 @@ If either value is already present, the **dict is unchanged**.
     --  [ ( "(", ")" ) ( "water", "fire" ) ]
 -}
 insert:
-  Pair comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
-insert { left, right } (PairDict pairDict)=
-  let { fromLeft, fromRight }= pairDict
+  Pair left right
+  ->PairDict left right
+  ->PairDict left right
+insert { left, right } pairDict=
+  let
+    fromLeft= dictFromLeft pairDict
+    fromRight= dictFromRight pairDict
   in
-  (case
-    (&&)
-      ((==) (Dict.get left fromLeft) Nothing)
-      ((==) (Dict.get right fromRight) Nothing)
+  case
+    (||)
+      (AssocDict.member left fromLeft)
+      (AssocDict.member right fromRight)
     of
     True->
-      { fromLeft= Dict.insert left right fromLeft
-      , fromRight= Dict.insert right left fromRight
-      }
-    False->
       pairDict
-  )
-  |>PairDict
+
+    False->
+      PairDict
+        { fromLeft=
+            AssocDict.insert left right
+              fromLeft
+        , fromRight=
+            AssocDict.insert right left
+              fromRight
+        }
 
 
 {-| Merge 2 `PairDict`s.
 If a value on the left or right is present, prefer the second dict.
 
-    numberOperatorNames=
+    numberNamedOperators=
       fromList
         [ ( '+', "plus" )
         , ( '-', "minus" )
         ]
-    boolOperatorNames=
+    customNamedOperators=
       fromList
         [ ( '∧', "and" )
         , ( '∨', "or" )
+        , ( '-', "negate" )
         ]
-    operatorNames=
-      union numberOperatorNames boolOperatorNames
+    validNamedOperators=
+      union
+        custumNamedOperators --has a '-' left
+        numberOperatorNames --preferred → its '-'-Pair is inserted
 -}
 union:
-  PairDict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
+  PairDict left right
+  ->PairDict left right
+  ->PairDict left right
 union added preferred=
-  added
-  |>foldl insert preferred
+  preferred
+  |>fold insert added
 
-{-| Reduce the left-right `Pair`s from highest left to lowest left
-
-    brackets=
-      fromList
-        [ ( '(', ')' )
-        , ( '{', '}' )
-        ]
-    openingAndClosing=
-      foldl
-        (\{ left, right } acc->
-          String.fromList [ left, right ]
-        )
-        []
-      --[ "{}", "()" ]
--}
-foldr:
-  (Pair comparableLeft comparableRight
-  ->result -> result
-  )
-  ->result
-  ->PairDict comparableLeft comparableRight
-  ->result
-foldr reduce initial (PairDict pairDict)=
-  pairDict.fromLeft
-  |>Dict.foldr
-      (\left right-> reduce (Pair left right))
-      initial
-
-{-| Reduce the left-right `Pair`s from lowest left to highest left
+{-| Reduce the left-right `Pair`s from most recently inserted
+to least recently inserted.
+A fold in the other direction doesn't exist, as association-`Dict`s should rarely rely on order (see `equal`)
 
     brackets=
       fromList
@@ -273,23 +282,19 @@ foldr reduce initial (PairDict pairDict)=
         ]
     openingAndClosing=
       brackets
-      |>foldl
+      |>fold
           (\{ left, right } acc->
             acc ++[ String.fromList [ left, right ] ]
           )
           []
-      --[ "()", "{}" ]
+      --[ "{}", "()" ]
 -}
-foldl:
-  (Pair comparableLeft comparableRight
-  ->result ->result
-  )
-  ->result
-  ->PairDict comparableLeft comparableRight
-  ->result
-foldl reduce initial (PairDict pairDict)=
-  pairDict.fromLeft
-  |>Dict.foldl
+fold:
+  (Pair left right ->acc ->acc)
+  ->acc ->PairDict left right ->acc
+fold reduce initial=
+  dictFromLeft
+  >>AssocDict.foldl
       (\left right-> reduce (Pair left right))
       initial
 
@@ -303,9 +308,9 @@ If **`left` does not exist**, the `PairDict` is **unchanged**
     --empty
 -}
 removeLeft:
-  comparableLeft
-  ->PairDict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
+  left
+  ->PairDict left right
+  ->PairDict left right
 removeLeft left pairDict=
   rightOf left pairDict
   |>Maybe.map
@@ -324,9 +329,9 @@ If `right` does not exist, the `PairDict` is unchanged
     --empty
 -}
 removeRight:
-  comparableRight
-  ->PairDict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
+  right
+  ->PairDict left right
+  ->PairDict left right
 removeRight right pairDict=
   leftOf right pairDict
   |>Maybe.map
@@ -337,9 +342,9 @@ removeRight right pairDict=
       pairDict
 
 remove:
-  Pair comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
-  ->PairDict comparableLeft comparableRight
+  Pair left right
+  ->PairDict left right
+  ->PairDict left right
 remove
   { left, right } (PairDict pairDict)
   =
@@ -348,8 +353,8 @@ remove
   in
   PairDict
     {pairDict
-    | fromLeft= Dict.remove left fromLeft
-    , fromRight= Dict.remove right fromRight
+    | fromLeft= AssocDict.remove left fromLeft
+    , fromRight= AssocDict.remove right fromRight
     }
 
 {-| map pairs
@@ -370,13 +375,13 @@ remove
       |>insert { left= "+", right= "plus" }
 -}
 map:
-  (Pair comparableLeft comparableRight
-  ->Pair comparableResultLeft comparableResultRight
+  (Pair left right
+  ->Pair resultLeft resultRight
   )
-  ->PairDict comparableLeft comparableRight
-  ->PairDict comparableResultLeft comparableResultRight
+  ->PairDict left right
+  ->PairDict resultLeft resultRight
 map alter=
-  foldl (alter >>insert) empty
+  fold (alter >>insert) empty
 
 
 {-| What has been left → right, right → left.
@@ -389,22 +394,90 @@ map alter=
 -}
 swapLeftRight:
   PairDict left right ->PairDict right left
-swapLeftRight (PairDict pairDict)=
+swapLeftRight pairDict=
   PairDict
-    { fromLeft= .fromRight pairDict
-    , fromRight= .fromLeft pairDict
+    { fromLeft= dictFromRight pairDict
+    , fromRight= dictFromLeft pairDict
     }
 
 
-{-| convert to a `Dict`, which you can access only from the left
+{-| No cost: An association-`Dict`, which you can access only from the left
 
     casedLetters=
       fromList
         [ ( 'A', 'a' ), ( 'B', 'b' ) ]
     lowerFromUpper=
-      casedLetters |>toDict
+      casedLetters |>dictFromLeft
 -}
-toDict: PairDict left right ->Dict left right
-toDict (PairDict pairDict)=
+dictFromLeft:
+  PairDict left right ->AssocDict.Dict left right
+dictFromLeft (PairDict pairDict)=
   pairDict.fromLeft
 
+{-| No cost: An association-`Dict`, which you can access only from the left
+
+    casedLetters=
+      fromList
+        [ ( 'A', 'a' ), ( 'B', 'b' ) ]
+    upperFromLower=
+      casedLetters |>dictFromRight
+-}
+dictFromRight:
+  PairDict left right ->AssocDict.Dict right left
+dictFromRight (PairDict pairDict)=
+  pairDict.fromRight
+
+
+encodePair:
+  (left ->Encode.Value)
+  ->(right ->Encode.Value)
+  ->Pair left right ->Encode.Value
+encodePair encodeLeft encodeRight { left, right }=
+  Encode.object
+    [ ( "left", encodeLeft left )
+    , ( "right", encodeRight right )
+    ]
+
+decodePair:
+  Decoder left ->Decoder right
+  ->Decoder (Pair left right)
+decodePair decodeLeft decodeRight=
+  Decode.map2 Pair
+    (Decode.field "left" decodeLeft)
+    (Decode.field "right" decodeRight)
+
+
+{-| all left-right-`Pair`s. As its only practical use is in `decode`, this is not exposed
+-}
+pairs: PairDict left right ->List (Pair left right)
+pairs=
+  dictFromLeft >>AssocDict.toList
+  >>List.map
+      (\( first, second )->
+        { left= first, right= second }
+      )
+
+{-| Convert a `PairDict` to a `Json.Encode.Value`.
+
+    Json.Encode.
+-}
+encode:
+  (left ->Encode.Value) ->(right ->Encode.Value)
+  ->PairDict left right ->Encode.Value
+encode encodeLeft encodeRight=
+  pairs
+  >>Encode.list
+      (encodePair encodeLeft encodeRight)
+
+{-| A `Decoder PairDict` from a `Json.Encode.Value`
+-}
+decode:
+  Decoder left ->Decoder right
+  ->Decoder (PairDict left right)
+decode decodeLeft decodeRight=
+  Decode.map fromList
+    (Decode.list
+      (Decode.map (\{ left, right }-> ( left, right ))
+        (decodePair decodeLeft decodeRight)
+      )
+    )

@@ -4,7 +4,10 @@ import Expect exposing (Expectation)
 import Test exposing (..)
 
 import PairDict exposing (empty)
-import Dict
+import AssocList as AssocDict exposing (Dict)
+
+import Json.Encode as Encode
+import Json.Decode as Decode
 
 
 suite: Test
@@ -26,7 +29,7 @@ suite=
         , ( '{', '}' )
         ]
   in
-  describe "two-way dict"
+  describe "pair dict"
     [ describe "create"
         [ describe "fromList is the same as inserting"
             [ test "empty  is  fromList []"
@@ -34,8 +37,10 @@ suite=
                   Expect.equal empty (PairDict.fromList [])
             , test "fromList gives same result as inserting"
               <|\()->
-                  Expect.equal
-                    of2 (PairDict.fromList listOf2)
+                  Expect.true "fromList gives same result as inserting"
+                    (PairDict.equal
+                      of2 (PairDict.fromList listOf2)
+                    )
             , test "fromList ignores duplicates as in example"
               <|\()->
                   let
@@ -49,21 +54,41 @@ suite=
                   in
                   Expect.equal 3
                     (PairDict.size (PairDict.fromList badList))
-            , test "fromDict toDict returns an equal dict"
+            , test "fromDict dictFromLeft returns an equal dict"
               <|\()->
                   let
                     lowerToUpperLetters=
-                      Dict.empty
-                      |>Dict.insert 'a' 'A'
-                      |>Dict.insert 'b' 'B'
+                      AssocDict.empty
+                      |>AssocDict.insert 'a' 'A'
+                      |>AssocDict.insert 'b' 'B'
 
-                    lowerUpperLetters= PairDict.fromDict lowerToUpperLetters
+                    lowerUpperLetters=
+                      PairDict.fromDict lowerToUpperLetters
                   in
-                  Expect.equalDicts
-                    lowerToUpperLetters
-                    (PairDict.toDict lowerUpperLetters)
+                  Expect.true "expected fromDict dictFromLeft returns an equal dict"
+                    (AssocDict.eq
+                      lowerToUpperLetters
+                      (PairDict.dictFromLeft lowerUpperLetters)
+                    )
             ]
         ]
+      
+    , test "equal example works"
+      <|\()->
+          let
+            letterCodes=
+              PairDict.fromList
+                [ ( 'a', 0 ), ( 'b', 1 ) ]
+            fancyCompetingLetterCodes=
+              PairDict.fromList
+                [ ( 'b', 1 ), ( 'a', 0 ) ]
+          in
+          Expect.true "reversed list |>fromList equal to fromList"
+            (PairDict.equal
+              letterCodes
+              fancyCompetingLetterCodes
+            )
+      
     , describe "access"
         [ test "finds left"
           <|\()->
@@ -74,46 +99,83 @@ suite=
               Expect.equal
                 (Just at1.left) (PairDict.leftOf at1.right of2)
         ]
+
     , describe "properties"
         [ describe "size, as in the examples"
             [ test "size of empty is 0"
               <|\()->
                   Expect.equal (PairDict.size empty) 0
             , test "dict has the same size as a list of unique values"
-                <|\()->
-                    Expect.equal 42
-                      (PairDict.size
-                        (PairDict.fromList
-                          (List.range 0 41
-                          |>List.map (\i-> ( i, i ))
-                          )
+              <|\()->
+                  Expect.equal 42
+                    (PairDict.size
+                      (PairDict.fromList
+                        (List.range 0 41
+                        |>List.map (\i-> ( i, i ))
                         )
                       )
+                    )
             ]
         ]
+    
     , describe "in"
-        [ test "union example"
+        [ describe "insert"
+            [ test "insert is ignored for duplicates"
+              <|\()->
+                  Expect.equal 2
+                    (PairDict.size
+                      (of2
+                      |>PairDict.insert at0
+                      |>PairDict.insert at1
+                      )
+                    )
+            , test "rightOf left is Just right of inserted pair"
+              <|\()->
+                  Expect.equal (Just at1.right)
+                    (empty |>PairDict.insert at1
+                    |>PairDict.rightOf at1.left 
+                    )
+            ]
+        , test "union example"
           <|\()->
               let
-                numberOperatorNames=
-                    [ ( '+', "plus" )
-                    , ( '-', "minus" )
-                    ]
-                boolOperatorNames=
-                    [ ( '∧', "and" )
-                    , ( '∨', "or" )
-                    ]
-                operatorNames=
+                numberNamedOperators=
+                  [ ( '+', "plus" )
+                  , ( '-', "minus" )
+                  ]
+                custumNamedOperators=
+                  [ ( '∧', "and" )
+                  , ( '∨', "or" )
+                  , ( '-', "negate" )
+                  ]
+                validNamedOperators=
                   PairDict.union
-                    (PairDict.fromList numberOperatorNames)
-                    (PairDict.fromList boolOperatorNames)
+                    (PairDict.fromList custumNamedOperators)
+                    (PairDict.fromList numberNamedOperators)
+                fromListOfConcatenated=
+                  PairDict.fromList
+                    (custumNamedOperators
+                    ++numberNamedOperators
+                    )
+                encode=
+                  PairDict.encode
+                    (Encode.string <<String.fromChar)
+                    Encode.string
+                  >>Encode.encode 2
               in
-              Expect.equal
-                operatorNames
-                (PairDict.fromList
-                  (numberOperatorNames ++boolOperatorNames)
+              Expect.true
+                ("union of fromList dicts ("
+                ++(encode validNamedOperators)
+                ++"equal to fromList of concatenated lists ("
+                ++(encode fromListOfConcatenated)
+                ++")"
+                )
+                (PairDict.equal
+                  validNamedOperators
+                  fromListOfConcatenated
                 )
         ]
+    
     , describe "out"
         [ test "add and remove left leaves it unchanged"
           <|\()->
@@ -136,50 +198,43 @@ suite=
                 |>PairDict.removeRight insert.right
                 )
         ]
-    , describe "transform"
+      
+    , describe "shape"
         [ test "lefts are the same as of the list"
           <|\()->
               Expect.equal
                 (of2 |>PairDict.lefts)
-                (listOf2 |>List.map Tuple.first)
+                (listOf2 |>List.reverse |>List.map Tuple.first)
         , test "rights are the same as of the list"
           <|\()->
               Expect.equal
                 (of2 |>PairDict.rights)
-                (listOf2 |>List.map Tuple.second)
+                (listOf2 |>List.reverse |>List.map Tuple.second)
         , describe "swap left-right"
             [ test "swapping two times is the same as the original"
                 <|\()->
-                    Expect.equal
-                      of2 (PairDict.swapLeftRight<|PairDict.swapLeftRight of2)
+                    Expect.equal of2
+                      (PairDict.swapLeftRight<|PairDict.swapLeftRight
+                        of2
+                      )
             , test "swap equal to fromList"
               <|\()->
-                  Expect.equal
-                    (PairDict.swapLeftRight of2)
-                    (PairDict.fromList
-                      (listOf2
-                      |>List.map (\( left, right )-> ( right, left ))
+                  Expect.true "swap equal to fromList"
+                    (PairDict.equal
+                      (PairDict.swapLeftRight of2)
+                      (PairDict.fromList
+                        (listOf2
+                        |>List.map (\( left, right )-> ( right, left ))
+                        )
                       )
                     )
             ]
-        , test "foldl works as in the example"
+        , test "fold works as in the example"
           <|\()->
               let
                 openingAndClosing=
                   brackets
-                  |>PairDict.foldl
-                      (\{ left, right } acc->
-                        acc ++[ String.fromList [ left, right ] ]
-                      )
-                      []
-              in
-              Expect.equal openingAndClosing [ "()", "{}" ]
-        , test "foldr works as in the example"
-          <|\()->
-              let
-                openingAndClosing=
-                  brackets
-                  |>PairDict.foldr
+                  |>PairDict.fold
                       (\{ left, right } acc->
                         acc ++[ String.fromList [ left, right ] ]
                       )
@@ -196,18 +251,22 @@ suite=
                 mathSymbolNames=
                   digitNames
                   |>PairDict.map
-                      (\{left,right}-> { left= String.fromInt left, right= right })
+                      (\{ left, right }->
+                        { left= String.fromInt left, right= right }
+                      )
                   |>PairDict.insert { left= "+", right= "plus" }
               in
-              Expect.equal
-                mathSymbolNames
-                (PairDict.fromList
-                  [ ( "0", "zero" )
-                  , ( "1", "one" )
-                  , ( "+", "plus" )
-                  ]
+              Expect.true "mapped PairDict equal to fromList"
+                (PairDict.equal
+                  mathSymbolNames
+                  (PairDict.fromList
+                    [ ( "0", "zero" )
+                    , ( "1", "one" )
+                    , ( "+", "plus" )
+                    ]
+                  )
                 )
-        , test "toDict example works"
+        , test "dictFromLeft example works"
           <|\()->
               let
                 casedLetterList=
@@ -215,12 +274,80 @@ suite=
                 casedLetters=
                   PairDict.fromList casedLetterList
                 lowerFromUpper=
-                  casedLetters |>PairDict.toDict
+                  casedLetters |>PairDict.dictFromLeft
               in
-              Expect.equal lowerFromUpper
-                (Dict.fromList casedLetterList)
+              Expect.true "PairDict.fromList dictFromLeft equal to AssocDict.fromList"
+                (AssocDict.eq
+                  lowerFromUpper
+                  (AssocDict.fromList casedLetterList)
+                )
+        , test "dictFromRight example works"
+          <|\()->
+              let
+                casedLetterList=
+                  [ ( 'A', 'a' ), ( 'B', 'b' ) ]
+                casedLetters=
+                  PairDict.fromList casedLetterList
+                upperFromLower=
+                  casedLetters |>PairDict.dictFromRight
+              in
+              Expect.true "PairDict.fromList dictFromRight equal to AssocDict.fromList"
+                (AssocDict.eq
+                  upperFromLower
+                  (AssocDict.fromList 
+                    (casedLetterList
+                    |>List.map (\( f, s )-> ( s, f ))
+                    )
+                  )
+                )
+        , describe "encode & decode"
+            [ test "encoded & decoded Pair is the same"
+              <|\()->
+                  let
+                    encodedDecoded=
+                      at0
+                      |>PairDict.encodePair
+                          Encode.int
+                          (Char.toCode >>Encode.int)
+                      |>Decode.decodeValue
+                          (PairDict.decodePair
+                            Decode.int
+                            (Decode.map Char.fromCode Decode.int)
+                          )
+                  in
+                  case encodedDecoded of
+                    Ok decoded->
+                      Expect.equal decoded at0
+                    
+                    Err err->
+                      Expect.fail (Decode.errorToString err)
+            , test "encoded & decoded PairDict is the same"
+              <|\()->
+                  let
+                    encoded=
+                      of2
+                      |>PairDict.encode
+                          Encode.int
+                          (Char.toCode >>Encode.int)
+                    encodedDecoded=
+                      encoded
+                      |>Decode.decodeValue
+                          (PairDict.decode
+                            Decode.int
+                            (Decode.map Char.fromCode Decode.int)
+                          )
+                  in
+                  case encodedDecoded of
+                    Ok decoded->
+                      Expect.true "encoded |>decoded equal to before"
+                        (PairDict.equal decoded of2)
+                    
+                    Err err->
+                      Expect.fail (Decode.errorToString err)
+            ]
         ]
-    , describe "concrete examples work"
+    
+    , describe "readme examples work"
         [ test "braces"
           <|\()->
               let
@@ -243,8 +370,8 @@ suite=
                       )
                 in
                 Expect.equal
-                  ("Typing (: " ++(typeChar '(') ++". Even }: " ++(typeChar '}'))
-                  "Typing (: (). Even }: {}"
+                  ([ '(', '}' ] |>List.map typeChar)
+                  [ "()", "{}" ]
         , test "cased letters"
           <|\()->
               let
@@ -258,6 +385,8 @@ suite=
                   PairDict.rightOf char casedLetters
               in
               Expect.equal
-                (upperCase 'c') (Just 'C')
+                ([ 'c', 'a', 'x' ] |>List.map upperCase)
+                ([ Just 'C', Just 'A', Nothing ])
         ]
     ]
+
