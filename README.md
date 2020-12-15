@@ -53,7 +53,7 @@ type Element=
   Hydrogen
   | Helium
 
-elementPair { element, atomicNumber )=
+elementPair { element, atomicNumber }=
   ( element, protonCount )
 
 elementAtomicNumberPairdict=
@@ -69,10 +69,10 @@ atomicNumberByElement=
 You have pairs that belong together:
 ```elm
 brackets=
-  fromList
-    [ ( '(', ')' )
-    , ( '{', '}' )
-    ]
+  empty
+  |>insert ( '(', ')' )
+  |>insert ( '{', '}' )
+
 typeChar character=
   case leftOf character brackets of
     Just opening->
@@ -121,8 +121,8 @@ Please take a look at [elm-bidict](https://github.com/Janiczek/elm-bidict)
 ```elm
 partners=
   empty
-  |>insert (Pair "Ann" "Alan")
-  |>insert (Pair "Alex" "Alastair")
-  |>insert (Pair "Alan" "Ann") --wait, this is no duplicate and gets inserted?
+  |>insert ( "Ann", "Alan" )
+  |>insert ( "Alex", "Alastair" )
+  |>insert ( "Alan", "Ann" ) --wait, this is no duplicate and gets inserted?
 ```
 A `PairDict` ony makes sense, when the **left & right sides describe something different**.
