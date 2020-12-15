@@ -44,7 +44,7 @@ lowerUppercaseLetters=
 upperCase char=
   rightOf char lowerUppercaseLetters
 ```
-try in the [ellie for the example cased letters](https://ellie-app.com/bNNjrC6r2TWa1)
+try in the [ellie for the example cased letters](https://ellie-app.com/bPdTNBJ3XSya1)
 
 ## Example: periodic table
 
