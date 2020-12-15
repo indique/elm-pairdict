@@ -29,6 +29,8 @@ Let's compare
         🔑 1 and 🗝️ 2
 
 
+<br><br>
+
 ## 👍 How to `PairDict`
 
 ## Example: cased letters
@@ -86,6 +88,7 @@ typeChar character=
 
 "Typing (: " ++(typeChar '(') ++". Even }: " ++(typeChar '}')
 ```
+<br>
 
 ## 👎 How not to `PairDict`
 
