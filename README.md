@@ -1,6 +1,34 @@
 # PairDict
 Lookup value-pairs from the left or the right.
 
+Let's compare
+
+
+### normal `Dict`
+
+> you want 🔑 1?
+
+        ( 🔑 0, 🌳 )
+      → ( 🔑 1, 🍐 )
+        ( 🔑 2, 🍐 )
+
+> Going through while comparing your key... Ah! Here it is:
+
+        🍐
+
+### `PairDict`
+
+> you want the left value of 🗝️ 1 and the right value of 🔑 0?
+
+      → ( 🔑 0, 🗝️ 2 )
+        ( 🔑 2, 🗝️ 0 )
+        ( 🔑 1, 🗝️ 1 ) ←
+
+> Going through while checking, if your key is equal... Ah! Here they are:
+
+        🔑 1 and 🗝️ 2
+
+
 ## 👍 How to `PairDict`
 
 ## Example: cased letters
