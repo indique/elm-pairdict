@@ -23,7 +23,7 @@ import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder)
 
 
-{-| ( left, right ) as a value-pair.
+{-| `( left, right )` as a value-pair.
 
     openClosedCurlyBracePair=
       ( '{', '}' )
@@ -45,7 +45,7 @@ leftIn ( left, right )=
 
     openClosedCurlyBracePair=
       ( '{', '}' )
-    closedCurly= right openClosedCurlyBracePair
+    closedCurly= rightIn openClosedCurlyBracePair
 -}
 rightIn: Pair left right ->right
 rightIn ( left, right )=
@@ -150,5 +150,4 @@ decode decodeLeft decodeRight=
   Decode.map2 Tuple.pair
     (Decode.field "left" decodeLeft)
     (Decode.field "right" decodeRight)
-
 
