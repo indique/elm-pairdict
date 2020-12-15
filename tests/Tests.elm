@@ -103,10 +103,10 @@ suite=
                         lowerUpperLetters=
                           PairDict.fromDict lowerToUpperLetters
                       in
-                      Expect.true "expected fromDict dictFromLeft returns an equal dict"
+                      Expect.true "expected fromDict toDict returns an equal dict"
                         (AssocDict.eq
                           lowerToUpperLetters
-                          (PairDict.dictFromLeft lowerUpperLetters)
+                          (PairDict.toDict lowerUpperLetters)
                         )
                 ]
             ]
@@ -121,7 +121,7 @@ suite=
                   PairDict.fromList
                     [ ( 'b', 1 ), ( 'a', 0 ) ]
               in
-              Expect.true "reversed list |>fromList equal to fromList"
+              Expect.true "reversed list fromList equal to fromList"
                 (PairDict.equal
                   letterCodes
                   fancyCompetingLetterCodes
@@ -266,25 +266,6 @@ suite=
                   Expect.equal
                     (of2 |>PairDict.rights)
                     (listOf2 |>List.reverse |>List.map Tuple.second)
-            , describe "swap left-right"
-                [ test "swapping two times is the same as the original"
-                    <|\()->
-                        Expect.equal of2
-                          (PairDict.swapLeftRight<|PairDict.swapLeftRight
-                            of2
-                          )
-                , test "swap equal to fromList"
-                  <|\()->
-                      Expect.true "swap equal to fromList"
-                        (PairDict.equal
-                          (PairDict.swapLeftRight of2)
-                          (PairDict.fromList
-                            (listOf2
-                            |>List.map (\( left, right )-> ( right, left ))
-                            )
-                          )
-                        )
-                ]
             , test "fold works as in the example"
               <|\()->
                   let
@@ -320,7 +301,7 @@ suite=
                         ]
                       )
                     )
-            , test "dictFromLeft example works"
+            , test "toDict example works"
               <|\()->
                   let
                     casedLetterList=
@@ -328,31 +309,12 @@ suite=
                     casedLetters=
                       PairDict.fromList casedLetterList
                     lowerFromUpper=
-                      casedLetters |>PairDict.dictFromLeft
+                      casedLetters |>PairDict.toDict
                   in
-                  Expect.true "PairDict.fromList dictFromLeft equal to AssocDict.fromList"
+                  Expect.true "PairDict.fromList toDict equal to AssocDict.fromList"
                     (AssocDict.eq
                       lowerFromUpper
                       (AssocDict.fromList casedLetterList)
-                    )
-            , test "dictFromRight example works"
-              <|\()->
-                  let
-                    casedLetterList=
-                      [ ( 'A', 'a' ), ( 'B', 'b' ) ]
-                    casedLetters=
-                      PairDict.fromList casedLetterList
-                    upperFromLower=
-                      casedLetters |>PairDict.dictFromRight
-                  in
-                  Expect.true "PairDict.fromList dictFromRight equal to AssocDict.fromList"
-                    (AssocDict.eq
-                      upperFromLower
-                      (AssocDict.fromList 
-                        (casedLetterList
-                        |>List.map (\( f, s )-> ( s, f ))
-                        )
-                      )
                     )
             , describe "encode & decode"
                 [ test "encoded & decoded PairDict is the same"
@@ -429,13 +391,13 @@ suite=
                       |>PairDict.insert { left= Hydrogen, right= 1 }
                       |>PairDict.insert { left= Helium, right= 2 }
 
-                    elementsByProtons=
-                      PairDict.dictFromRight elementProtons
+                    protonsOfElements=
+                      PairDict.toDict elementProtons
                   in
                   Expect.equal
-                    [ Just Helium, Just Hydrogen ]
-                    [ AssocDict.get 2 elementsByProtons
-                    , AssocDict.get 1 elementsByProtons
+                    [ Just 2, Just 1 ]
+                    [ AssocDict.get Helium protonsOfElements
+                    , AssocDict.get Hydrogen protonsOfElements
                     ]
             ]
         ]

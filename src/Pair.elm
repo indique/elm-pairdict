@@ -32,6 +32,7 @@ type alias Pair left right=
   , right: right
   }
 
+
 {-| map the `left` value in a `Pair`
 
     { left= 128522, right= "smile" }
