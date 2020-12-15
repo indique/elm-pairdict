@@ -32,7 +32,7 @@ module PairDict exposing
 @docs removeLeft, removeRight
 
 ## shape
-@docs lefts, rights, fold, map, toDIct, encode
+@docs lefts, rights, fold, map, toDict, encode
 -}
 
 import Dict
