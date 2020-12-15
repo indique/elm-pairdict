@@ -23,15 +23,16 @@ type Element=
   Hydrogen
   | Helium
 
-type alias ProtonCount= Int
+elementPair { element, atomicNumber }=
+  { left= element, right= protonCount }
 
-elementProtons=
+elementAtomicNumberPairdict=
   empty
-  |>insert { left= Hydrogen, right= 1 }
-  |>insert { left= Helium, right= 2 }
+  |>insert ({ element= Hydrogen, atomicNumber= 1 } |>elementPair)
+  |>insert ({ element= Helium, atomicNumber= 2 } |>elementPair)
 
-elementsByProtons=
-  dictFromRight elementProtons
+atomicNumberByElement=
+  toDict elementAtomicNumberPairdict
 ```
 
 ## Example: brackets
@@ -89,8 +90,8 @@ Please take a look at [elm-bidict](https://github.com/Janiczek/elm-bidict)
 ```elm
 partners=
   empty
-  |>insert "Ann" "Alan"
-  |>insert "Alex" "Alastair"
-  |>insert "Alan" "Ann" --wait, this is no duplicate and gets inserted?
+  |>insert (Pair "Ann" "Alan")
+  |>insert (Pair "Alex" "Alastair")
+  |>insert (Pair "Alan" "Ann") --wait, this is no duplicate and gets inserted?
 ```
 A `PairDict` ony makes sense, when the **left & right sides describe something different**.
