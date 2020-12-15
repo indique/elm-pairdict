@@ -7,9 +7,9 @@ Lookup value-pairs from the left or the right.
 ```elm
 lowerUppercaseLetters=
   empty
-  |>insert { left= 'a', right= 'A' }
-  |>insert { left= 'b', right= 'B' }
-  |>insert { left= 'c', right= 'C' }
+  |>insert ( 'a', 'A' )
+  |>insert ( 'b', 'B' )
+  |>insert ( 'c', 'C' )
 
 upperCase char=
   rightOf char lowerUppercaseLetters
@@ -23,8 +23,8 @@ type Element=
   Hydrogen
   | Helium
 
-elementPair { element, atomicNumber }=
-  { left= element, right= protonCount }
+elementPair { element, atomicNumber )=
+  ( element, protonCount )
 
 elementAtomicNumberPairdict=
   empty
