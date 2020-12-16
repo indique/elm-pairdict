@@ -28,8 +28,8 @@ Let's compare
 
         🔑 1 and 🗝️ 2
 
+&nbsp;
 
-<br>
 
 ## 👍 How to `PairDict`
 
@@ -88,7 +88,8 @@ typeChar character=
 
 "Typing (: " ++(typeChar '(') ++". Even }: " ++(typeChar '}')
 ```
-<br>
+&nbsp;
+
 
 ## 👎 How not to `PairDict`
 
