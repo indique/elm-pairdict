@@ -67,7 +67,7 @@ This is handy when using maps or folds etc.
       |>PairDict.insert ( 127795, "tree" )
     namedEmojis=
       namedEmojiCodes
-      |>PairDict.map (Pair.mapLeft String.fromInt)
+      |>PairDict.map (Pair.mapLeft Char.fromCode)
 
 > `PairDict.fromList [ ( '🍐', "pear" ), ( '🌳', "tree" ) ]`
 -}
@@ -93,7 +93,7 @@ This is handy when using maps or folds etc.
       |>PairDict.insert ( "tree", 127795 )
     namedEmojis=
       namedEmojiCodes
-      |>PairDict.map (Pair.mapLeft String.fromInt)
+      |>PairDict.map (Pair.mapRight Char.fromCode)
 
 > `PairDict.fromList [ ( "pear", '🍐' ), ( "tree", '🌳' ) ]`
 -}
@@ -103,6 +103,34 @@ mapRight:
   ->Pair left resultRight
 mapRight alter ( left, right )=
   ( left, alter right )
+
+
+{-| map the `right` value in a `Pair`
+
+    ( "smile", 128522 )
+    |>mapRight Char.fromCode
+
+> `( "smile", '😊' )`
+
+This is handy when using maps or folds etc.
+
+    namedEmojiCodes=
+      PairDict.empty
+      |>PairDict.insert ( "pear", 127824 )
+      |>PairDict.insert ( "tree", 127795 )
+    namedEmojis=
+      namedEmojiCodes
+      |>PairDict.map (Pair.map String.toUpper)
+
+> `PairDict.fromList [ ( "PEAR", '🍐' ), ( "TREE", '🌳' ) ]`
+-}
+map:
+  (left ->resultLeft)
+  ->(right ->resultRight)
+  ->Pair left right
+  ->Pair resultLeft resultRight
+map alterLeft alterRight ( left, right )=
+  ( alterLeft left, alterRight right )
 
 
 {-| Convert a `Pair` to a `Json.Encode.Value`.
