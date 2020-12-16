@@ -11,29 +11,6 @@ import Json.Decode as Decode
 import Pair exposing (Pair)
 
 
-at0: Pair Int Char
-at0= ( 0, 'A' )
-
-at1: Pair Int Char
-at1= ( 1, 'B' )
-
-of2: PairDict Int Char
-of2=
-  empty
-  |>PairDict.insert at0
-  |>PairDict.insert at1
-
-listOf2: List (Pair Int Char)
-listOf2=
-  [ at0, at1 ]
-
-brackets: PairDict.PairDict Char Char
-brackets=
-  PairDict.fromList
-    [ ( '(', ')' )
-    , ( '{', '}' )
-    ]
-
 suite: Test
 suite=
   describe "pair dict & pair"
@@ -49,6 +26,12 @@ suite=
         , readmeExamplesTest
         ]
     ]
+
+at0: Pair Int Char
+at0= ( 0, 'A' )
+
+at1: Pair Int Char
+at1= ( 1, 'B' )
 
 pairTest: Test
 pairTest=
@@ -99,6 +82,23 @@ pairTest=
               Expect.fail (Decode.errorToString err)
     ]
 
+
+of2: PairDict Int Char
+of2=
+  empty
+  |>PairDict.insert at0
+  |>PairDict.insert at1
+
+listOf2: List (Pair Int Char)
+listOf2=
+  [ at0, at1 ]
+
+brackets: PairDict.PairDict Char Char
+brackets=
+  PairDict.fromList
+    [ ( '(', ')' )
+    , ( '{', '}' )
+    ]
 
 pairDictCreateTest: Test
 pairDictCreateTest=
