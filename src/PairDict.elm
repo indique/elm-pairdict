@@ -51,7 +51,7 @@ import Json.Decode as Decode exposing (Decoder)
         🔑 1 and 🗝️ 2
 
 Like [assoc-list](https://github.com/pzp1997/assoc-list),
-a `PairDict` allows for anything as `left` or `right` values except for functions and things that contain functions.
+a `PairDict` allows for anything as left or right values except for functions and things that contain functions.
 
 ## Example: cased letters
     lowerUppercaseLetters=
@@ -64,7 +64,7 @@ a `PairDict` allows for anything as `left` or `right` values except for function
       rightOf char lowerUppercaseLetters
 -}
 type PairDict left right=
-  PairList (List (Pair left right))
+  Pairs (List (Pair left right))
 
 
 {-| using (==) built-in equality is often not useful in the context of association-dicts.
@@ -75,18 +75,18 @@ Ignoring insertion order: do these 2 `PairDict`s have the same size and identica
       PairDict.fromList
         [ ( 'a', 97 ), ( 'b', 98 ) ]
     fancyCompetingLetterCodes=
-      empty
-      |>insert ( 'b', 98 )
-      |>insert ( 'a', 97 )
+      PairDict.empty
+      |>PairDict.insert ( 'b', 98 )
+      |>PairDict.insert ( 'a', 97 )
     
-    equal
+    PairDict.equal
       letterCodes
       fancyCompetingLetterCodes
-
 > `True`
 -}
 equal:
-  PairDict left right ->PairDict left right ->Bool
+  PairDict left right ->PairDict left right
+  ->Bool
 equal pairDictA=
   emptyOrMore
     { ifEmpty=
@@ -112,15 +112,15 @@ equal pairDictA=
 -}
 empty: PairDict left right
 empty=
-  PairList []
+  Pairs []
 
 {-| Create a `PairDict` from a association-`Dict`. `left` is the key, `right` is the value.
 If multiple equal keys or values are present, the value **first** in the `Dict` is **prefered**.
     
     lowerToUpperLetters=
-      AssocList.Dict.empty
-      |>AssocList.Dict.insert 'a' 'A'
-      |>AssocList.Dict.insert 'b' 'B'
+      AssocList.empty
+      |>AssocList.insert 'a' 'A'
+      |>AssocList.insert 'b' 'B'
 
     lowerUpperLetters=
       PairDict.fromDict lowerToUpperLetters
@@ -136,7 +136,7 @@ fromDict=
 {-| Create a `PairDict` _conveniently_ from `Tuple`s. `left` is the first, `right` is the second.
 If right or left values are given multiple times, the value **first** in the `List` is **prefered**.
     
-    fromList
+    PairDict.fromList
       [ ( 'b', 'B' ) --insert ( 'b', 'B' )
       , ( 'a', 'A' ) --insert ( 'a', 'A' )
       , ( 'b', 'C' ) --ignored, as the left value already exists
@@ -153,15 +153,16 @@ fromList=
 {-| `Just` the right value if the left value is present in the `PairDict`, else `Nothing`
 
     casedLetters=
-      empty
-      |>insert ( 'a', 'A' )
-      |>insert ( 'b', 'B' )
+      PairDict.empty
+      |>PairDict.insert ( 'a', 'A' )
+      |>PairDict.insert ( 'b', 'B' )
 
     lowerCase char=
       leftOf char casedLetters
 -}
 rightOf:
-  left ->PairDict left right ->Maybe right
+  left ->PairDict left right
+  ->Maybe right
 rightOf left=
   emptyOrMore
     { ifEmpty= Nothing
@@ -178,16 +179,15 @@ rightOf left=
 {-| `Just` the right value if the left value is present in the `PairDict`, else `Nothing`
 
     casedLetters=
-      empty
-      |>insert ( 'a', 'A' )
-      |>insert ( 'b', 'B' )
+      PairDict.empty
+      |>PairDict.insert ( 'a', 'A' )
+      |>PairDict.insert ( 'b', 'B' )
 
     upperCase char=
       rightOf char casedLetters
 -}
 leftOf:
-  right
-  ->PairDict left right
+  right ->PairDict left right
   ->Maybe left
 leftOf right=
   emptyOrMore
@@ -206,15 +206,22 @@ leftOf right=
 {-| `ifEmpty` if the `PairDict` contains no `Pair`s,
 else `ifMore` with the most recently inserted `Pair` followed by a `PairDict` with the other `Pair`s.
 
+It has a very similar use case to a `case` .. `of` on a `List`.
+
     isEmpty=
-      emptyOrMore
+      PairDict.emptyOrMore
         { ifEmpty= True
         , ifMore= \_ _-> False
         }
-    mostRecentlyInserted=
-      emptyOrMore
+    mostRecent=
+      PairDict.emptyOrMore
         { ifMore= \pair _-> Just pair
         , ifEmpty= Nothing
+        }
+    removeMostRecent=
+      PairDict.emptyOrMore
+        { ifMore= \_ rest-> rest
+        , ifEmpty= PairDict.empty
         }
 -}
 emptyOrMore:
@@ -225,50 +232,54 @@ emptyOrMore:
   }
   ->PairDict left right ->result
 emptyOrMore
-  { ifEmpty, ifMore } (PairList pairList)
+  { ifEmpty, ifMore } (Pairs pairs)
   =
-  case pairList of
+  case pairs of
     []->
       ifEmpty
     
     pair ::rest->
-      ifMore pair (PairList rest)
+      ifMore pair (Pairs rest)
       
 
-{-| How many pairs there are.
+{-| How many `Pair`s there are in a `PairDict`.
 
-    size empty
+    PairDict.size empty
 > `0`
     
-    size
-      (fromList
-        (List.range 0 41 |>List.map (\i-> ( i, i )))
-      )
+    meaninglessNumbers=
+      PairDict.fromList
+        (List.range 0 41
+        |>List.map (\i-> ( i, i ))
+        )
+    PairDict.size meaninglessNumbers
 > `42`
 -}
 size: PairDict left right ->Int
-size (PairList pairList)=
-  List.length pairList
+size (Pairs pairs)=
+  List.length pairs
 
-{-| values on the left
+{-| Values on the left.
 
     brackets=
-      fromList [ ( '(', ')' ), ( '{', '}' ) ]
+      PairDict.fromList
+        [ ( '(', ')' ), ( '{', '}' ) ]
     opening= lefts brackets
 -}
 lefts: PairDict left right ->List left
-lefts (PairList pairList)=
-  List.map leftIn pairList
+lefts (Pairs pairs)=
+  List.map leftIn pairs
 
-{-| values on the right
+{-| Values on the right.
 
     brackets=
-      fromList [ ( '(', ')' ), ( '{', '}' ) ]
+      PairDict.fromList
+        [ ( '(', ')' ), ( '{', '}' ) ]
     closing= rights brackets
 -}
 rights: PairDict left right ->List right
-rights (PairList pairList)=
-  List.map rightIn pairList
+rights (Pairs pairs)=
+  List.map rightIn pairs
 
 rightMember:
   right ->PairDict left right ->Bool
@@ -295,35 +306,35 @@ insert:
   Pair left right
   ->PairDict left right
   ->PairDict left right
-insert pair ((PairList pairList) as pairDict)=
+insert pair ((Pairs pairs) as pairDict)=
   case
     (||)
       (leftMember (leftIn pair) pairDict)
       (rightMember (rightIn pair) pairDict)
     of
     True->
-      PairList pairList
+      Pairs pairs
 
     False->
-      PairList (pair ::pairList)
+      Pairs (pair ::pairs)
 
 
 {-| Merge 2 `PairDict`s.
-If a value on the left or right is present, prefer the second dict.
+If a value on the left or right is present, prefer the last `PairDict`.
 
     numberNamedOperators=
-      fromList
+      PairDict.fromList
         [ ( '+', "plus" )
         , ( '-', "minus" )
         ]
     customNamedOperators=
-      fromList
+      PairDict.fromList
         [ ( '∧', "and" )
         , ( '∨', "or" )
         , ( '-', "negate" )
         ]
     validNamedOperators=
-      union
+      PairDict.union
         custumNamedOperators --has a '-' left
         numberOperatorNames --preferred → its '-'-Pair is inserted
 -}
@@ -339,15 +350,15 @@ to least recently inserted.
 A fold in the other direction doesn't exist, as association-`Dict`s should rarely rely on order (see `equal`)
 
     brackets=
-      empty
-      |>insert ( '(', ')' )
-      |>insert ( '{', '}' )
+      PairDict.empty
+      |>PairDict.insert ( '(', ')' )
+      |>PairDict.insert ( '{', '}' )
 
     openingAndClosing=
       brackets
-      |>fold
+      |>PairDict.fold
           (\( left, right ) acc->
-            acc ++[ String.fromList [ left, right ] ]
+            acc++[ String.fromList [ left, right ] ]
           )
           []
 > `[ "{}", "()" ]`
@@ -355,8 +366,8 @@ A fold in the other direction doesn't exist, as association-`Dict`s should rarel
 fold:
   (Pair left right ->acc ->acc)
   ->acc ->PairDict left right ->acc
-fold reduce initial (PairList pairList)=
-  pairList
+fold reduce initial (Pairs pairs)=
+  pairs
   |>List.foldl
       (\pair-> reduce pair)
       initial
@@ -365,49 +376,53 @@ fold reduce initial (PairList pairList)=
 {-| remove left-right pair.
 If **`left` does not exist**, the `PairDict` is **unchanged**
 
-    empty
-    |>insert "(" ")"
-    |>removeLeft ")" --unchanged, ")" is not a left value
-    |>removeLeft "(" --removes ( "(", ")" )
-    --empty
+    PairDict.empty
+    |>PairDict.insert "(" ")"
+    |>PairDict.removeLeft ")" 
+        --unchanged, ")" is not a left value
+    |>PairDict.removeLeft "("
+        --removes ( "(", ")" )
+> `PairDict.empty`
 -}
 removeLeft:
   left
   ->PairDict left right
   ->PairDict left right
-removeLeft left (PairList pairList)=
-  List.filter (leftIn >>(/=) left) pairList
-  |>PairList
+removeLeft left (Pairs pairs)=
+  List.filter (leftIn >>(/=) left) pairs
+  |>Pairs
 
 {-| remove left-right pair.
 If `right` does not exist, the `PairDict` is unchanged
 
-    empty
-    |>insert ( "(", ")" )
-    |>removeRight "(" --unchanged, "(" is not a right value
-    |>removeRight ")" --removes ( "(", ")" )
-    --empty
+    PairDict.empty
+    |>PairDict.insert ( "(", ")" )
+    |>PairDict.removeRight "("
+        --unchanged, "(" is not a right value
+    |>PairDict.removeRight ")"
+        --removes ( "(", ")" )
+> `PairDict.empty`
 -}
 removeRight:
   right
   ->PairDict left right
   ->PairDict left right
-removeRight right (PairList pairList)=
-  List.filter (rightIn >>(/=) right) pairList
-  |>PairList
+removeRight right (Pairs pairs)=
+  List.filter (rightIn >>(/=) right) pairs
+  |>Pairs
   
 
 {-| map pairs
 
     digitNames=
-      empty
-      |>insert ( 0, "zero" )
-      |>insert ( 1, "one" )
+      PairDict.empty
+      |>PairDict.insert ( 0, "zero" )
+      |>PairDict.insert ( 1, "one" )
 
     mathSymbolNames=
       digitNames
-      |>map (Pair.mapLeft String.fromInt)
-      |>insert ( "+", "plus" )
+      |>PairDict.map (Pair.mapLeft String.fromInt)
+      |>PairDict.insert ( "+", "plus" )
 -}
 map:
   (Pair left right
@@ -422,7 +437,7 @@ map alter=
 {-| Convert to an association-`Dict`, which you can access only from the left
 
     casedLetters=
-      fromList
+      PairDict.fromList
         [ ( 'A', 'a' ), ( 'B', 'b' ) ]
     lowerFromUpper=
       casedLetters |>dictFromLeft
@@ -439,18 +454,20 @@ toDict=
 --for encoding / decoding: https://ellie-app.com/bNL2HsCtswQa1
 {-| all left-right-`Pair`s. **Not exposed**
 -}
-pairs: PairDict left right ->List (Pair left right)
-pairs (PairList pairList)=
-  pairList
+toPairs:
+  PairDict left right
+  ->List (Pair left right)
+toPairs (Pairs pairs)=
+  pairs
 
 {-| Convert a `PairDict` to a `Json.Encode.Value`.
 
     somePairDict=
-      empty
-      |>insert ( 1, 11 )
-      |>insert ( 2, 22 )
+      PairDict.empty
+      |>PairDict.insert ( 1, 11 )
+      |>PairDict.insert ( 2, 22 )
     Encode.encode 1
-      (encode
+      (PairDict.encode
         Encode.int Encode.int
         somePairDict
       )
@@ -473,7 +490,7 @@ encode:
   (left ->Encode.Value) ->(right ->Encode.Value)
   ->PairDict left right ->Encode.Value
 encode encodeLeft encodeRight=
-  pairs
+  toPairs
   >>Encode.list
       (Pair.encode encodeLeft encodeRight)
 
@@ -494,9 +511,11 @@ The order of insertion is not reconstructed (see `equal`)
     ]
     """
     |>Decode.decodeString
-        (decode Decode.int Decode.int)
+        (PairDict.decode
+          Decode.int Decode.int
+        )
 
-> `Ok (fromList [ ( 1, 11 ), ( 2, 22 ) ])`
+> `Ok (Pairs [ ( 1, 11 ), ( 2, 22 ) ])` = a `PairDict`
 -}
 decode:
   Decoder left ->Decoder right
