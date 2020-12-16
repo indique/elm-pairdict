@@ -2,7 +2,7 @@ module PairDict exposing
   ( PairDict
   , equal
   , empty, fromDict, fromList
-  , rightOf, leftOf, size
+  , rightOf, leftOf, emptyOrMore, size
   , lefts, rights
   , insert, map
   , removeLeft, removeRight
@@ -14,16 +14,11 @@ module PairDict exposing
 {-| 
 @docs PairDict
 
-@docs equal
-
 ## create
 @docs empty, fromDict, fromList, decode
 
-## access
-@docs rightOf, leftOf
-
-## properties
-@docs size
+## scan
+@docs rightOf, leftOf, equal, emptyOrMore, size
 
 ## in
 @docs insert, union
@@ -45,15 +40,25 @@ import Json.Decode as Decode exposing (Decoder)
 
 {-| Want to look up value-pairs from the left or the right?
 
+> you want the left value of `🗝️ 1` and the right value of `🔑 0`?
+
+      → ( 🔑 0, 🗝️ 2 )
+        ( 🔑 2, 🗝️ 0 )
+        ( 🔑 1, 🗝️ 1 ) ←
+
+> Going through while checking, if your key is equal... Ah! Here they are:
+
+        🔑 1 and 🗝️ 2
+
 Like [assoc-list](https://github.com/pzp1997/assoc-list),
 a `PairDict` allows for anything as `left` or `right` values except for functions and things that contain functions.
 
 ## Example: cased letters
     lowerUppercaseLetters=
-      empty
-      |>insert ( 'a', 'A' )
-      |>insert ( 'b', 'B' )
-      |>insert ( 'c', 'C' )
+      PairDict.empty
+      |>PairDict.insert ( 'a', 'A' )
+      |>PairDict.insert ( 'b', 'B' )
+      |>PairDict.insert ( 'c', 'C' )
 
     upperCase char=
       rightOf char lowerUppercaseLetters
@@ -62,43 +67,48 @@ type PairDict left right=
   PairList (List (Pair left right))
 
 
-isEmpty: PairDict left right ->Bool
-isEmpty=
-  List.isEmpty <<pairs
-
 {-| using (==) built-in equality is often not useful in the context of association-dicts.
 
 Ignoring insertion order: do these 2 `PairDict`s have the same size and identical `Pair`s?
 
     letterCodes=
-      fromList [ ( 'a', 0 ), ( 'b', 1 ) ]
+      PairDict.fromList
+        [ ( 'a', 97 ), ( 'b', 98 ) ]
     fancyCompetingLetterCodes=
-      fromList [ ( 'b', 1 ), ( 'a', 0 ) ]
+      empty
+      |>insert ( 'b', 98 )
+      |>insert ( 'a', 97 )
     
     equal
       letterCodes
       fancyCompetingLetterCodes
-    --> True
+
+> `True`
 -}
 equal:
   PairDict left right ->PairDict left right ->Bool
-equal pairDictA (PairList pairListB)=
-  case pairListB of
-    []->
-      isEmpty pairDictA
-    
-    pair ::rest->
-      case rightOf (leftIn pair) pairDictA of
-        Nothing->
-          False
-        
-        Just _->
-          equal
-            (pairDictA |>removeLeft (leftIn pair))
-            (PairList rest)
+equal pairDictA=
+  emptyOrMore
+    { ifEmpty=
+        pairDictA
+        |>emptyOrMore
+            { ifEmpty= True
+            , ifMore= \_ _-> False
+            }
+    , ifMore=
+        \( left, _ ) more->
+          case rightOf left pairDictA of
+            Just _->
+              equal
+                (pairDictA |>removeLeft left)
+                more
+            
+            Nothing->
+              False
+    }
 
 
-{-| A `PairDict` with no elements
+{-| A `PairDict` with no `Pair`s inside
 -}
 empty: PairDict left right
 empty=
@@ -112,7 +122,8 @@ If multiple equal keys or values are present, the value **first** in the `Dict` 
       |>AssocList.Dict.insert 'a' 'A'
       |>AssocList.Dict.insert 'b' 'B'
 
-    lowerUpperLetters= fromDict lowerToUpperLetters
+    lowerUpperLetters=
+      PairDict.fromDict lowerToUpperLetters
 -}
 fromDict:
   AssocDict.Dict left right
@@ -134,7 +145,7 @@ If right or left values are given multiple times, the value **first** in the `Li
       ]
 -}
 fromList:
-  List ( left, right ) ->PairDict left right
+  List (Pair left right) ->PairDict left right
 fromList=
   List.foldl insert empty
 
@@ -150,21 +161,19 @@ fromList=
       leftOf char casedLetters
 -}
 rightOf:
-  left
-  ->PairDict left right
-  ->Maybe right
-rightOf left (PairList pairList)=
-  case pairList of
-    pair ::rest->
-      case (==) (leftIn pair) left of
-        True->
-          Just (rightIn pair)
-
-        False->
-          rightOf left (PairList rest)
-    
-    []->
-      Nothing
+  left ->PairDict left right ->Maybe right
+rightOf left=
+  emptyOrMore
+    { ifEmpty= Nothing
+    , ifMore=
+        \( pairLeft, pairRight ) rest->
+          case (==) pairLeft left of
+            True->
+              Just pairRight
+              
+            False->
+              rightOf left rest
+    }
 
 {-| `Just` the right value if the left value is present in the `PairDict`, else `Nothing`
 
@@ -180,19 +189,51 @@ leftOf:
   right
   ->PairDict left right
   ->Maybe left
-leftOf right (PairList pairList)=
+leftOf right=
+  emptyOrMore
+    { ifEmpty= Nothing
+    , ifMore=
+        \( pairLeft, pairRight ) rest->
+          case (==) pairRight right of
+            True->
+              Just pairLeft
+
+            False->
+              leftOf right rest
+    }
+
+
+{-| `ifEmpty` if the `PairDict` contains no `Pair`s,
+else `ifMore` with the most recently inserted `Pair` followed by a `PairDict` with the other `Pair`s.
+
+    isEmpty=
+      emptyOrMore
+        { ifEmpty= True
+        , ifMore= \_ _-> False
+        }
+    mostRecentlyInserted=
+      emptyOrMore
+        { ifMore= \pair _-> Just pair
+        , ifEmpty= Nothing
+        }
+-}
+emptyOrMore:
+  { ifEmpty: result
+  , ifMore:
+      Pair left right ->PairDict left right
+      ->result
+  }
+  ->PairDict left right ->result
+emptyOrMore
+  { ifEmpty, ifMore } (PairList pairList)
+  =
   case pairList of
-    pair ::rest->
-      case (==) (rightIn pair) right of
-        True->
-          Just (leftIn pair)
-
-        False->
-          leftOf right (PairList rest)
-    
     []->
-      Nothing
-
+      ifEmpty
+    
+    pair ::rest->
+      ifMore pair (PairList rest)
+      
 
 {-| How many pairs there are.
 
@@ -255,18 +296,16 @@ insert:
   ->PairDict left right
   ->PairDict left right
 insert pair ((PairList pairList) as pairDict)=
-  PairList
-    (case
-      (||)
-        (leftMember (leftIn pair) pairDict)
-        (rightMember (rightIn pair) pairDict)
-      of
-      True->
-        pairList
+  case
+    (||)
+      (leftMember (leftIn pair) pairDict)
+      (rightMember (rightIn pair) pairDict)
+    of
+    True->
+      PairList pairList
 
-      False->
-        pair ::pairList
-    )
+    False->
+      PairList (pair ::pairList)
 
 
 {-| Merge 2 `PairDict`s.
@@ -293,18 +332,17 @@ union:
   ->PairDict left right
   ->PairDict left right
 union added preferred=
-  preferred
-  |>fold insert added
+  fold insert preferred added
 
 {-| Reduce the left-right `Pair`s from most recently inserted
 to least recently inserted.
 A fold in the other direction doesn't exist, as association-`Dict`s should rarely rely on order (see `equal`)
 
     brackets=
-      fromList
-        [ ( '(', ')' )
-        , ( '{', '}' )
-        ]
+      empty
+      |>insert ( '(', ')' )
+      |>insert ( '{', '}' )
+
     openingAndClosing=
       brackets
       |>fold
@@ -362,10 +400,10 @@ removeRight right (PairList pairList)=
 {-| map pairs
 
     digitNames=
-      fromList
-        [ ( 0, "zero" )
-        , ( 1, "one" )
-        ]
+      empty
+      |>insert ( 0, "zero" )
+      |>insert ( 1, "one" )
+
     mathSymbolNames=
       digitNames
       |>map (Pair.mapLeft String.fromInt)
