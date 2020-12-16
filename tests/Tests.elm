@@ -16,13 +16,11 @@ suite=
   describe "pair dict & pair"
     [ pairTest
     , describe "pair dict"
-        [ pairDictCreateTest
-        , pairDictEqualTest
-        , pairDictAccessTest
-        , pairDictPropertyTest
-        , pairDictInTest
-        , pairDictOutTest
-        , pairDictShapeTest
+        [ createPairDictTest
+        , scanPairDictScanTest
+        , inPairDictTest
+        , outPairDictTest
+        , shapePairDictTest
         , readmeExamplesTest
         ]
     ]
@@ -100,8 +98,8 @@ brackets=
     , ( '{', '}' )
     ]
 
-pairDictCreateTest: Test
-pairDictCreateTest=
+createPairDictTest: Test
+createPairDictTest=
   describe "create"
     [ describe "fromList is the same as empty |>inserting"
         [ test "empty  is  fromList []"
@@ -145,44 +143,10 @@ pairDictCreateTest=
         ]
     ]
 
-pairDictEqualTest: Test
-pairDictEqualTest=
-  test "equal example works"
-  <|\()->
-      let
-        letterCodes=
-          PairDict.fromList
-            [ ( 'a', 0 ), ( 'b', 1 ) ]
-        fancyCompetingLetterCodes=
-          PairDict.fromList
-            [ ( 'b', 1 ), ( 'a', 0 ) ]
-      in
-      Expect.true "reversed list fromList equal to fromList"
-        (PairDict.equal
-          letterCodes
-          fancyCompetingLetterCodes
-        )
-
-pairDictAccessTest: Test
-pairDictAccessTest=
-  describe "access"
-    [ test "finds left"
-      <|\()->
-          PairDict.rightOf (Pair.leftIn at0) of2
-          |>Expect.equal
-              (Just (Pair.rightIn at0))
-    , test "finds right"
-      <|\()->
-          PairDict.leftOf (Pair.rightIn at1) of2
-          |>Expect.equal
-              (Just (Pair.leftIn at1))
-    ]
-
-
-pairDictPropertyTest: Test
-pairDictPropertyTest=
-  describe "property"
-    [ describe "size, as in the examples"
+scanPairDictScanTest: Test
+scanPairDictScanTest=
+  describe "scan"
+    [ describe "size"
         [ test "size of empty is 0"
           <|\()->
               Expect.equal (PairDict.size empty) 0
@@ -197,10 +161,66 @@ pairDictPropertyTest=
                   )
                 )
         ]
+    , describe "access"
+        [ test "finds left"
+          <|\()->
+              PairDict.rightOf (Pair.leftIn at0) of2
+              |>Expect.equal
+                  (Just (Pair.rightIn at0))
+        , test "finds right"
+          <|\()->
+              PairDict.leftOf (Pair.rightIn at1) of2
+              |>Expect.equal
+                  (Just (Pair.leftIn at1))
+        ]
+    , test "equal example works"
+      <|\()->
+          let
+            letterCodes=
+              PairDict.fromList
+                [ ( 'a', 0 ), ( 'b', 1 ) ]
+            fancyCompetingLetterCodes=
+              PairDict.fromList
+                [ ( 'b', 1 ), ( 'a', 0 ) ]
+          in
+          Expect.true "reversed list fromList equal to fromList"
+            (PairDict.equal
+              letterCodes
+              fancyCompetingLetterCodes
+            )
+    , describe "emptyOrMore examples work"
+        [ test "isEmpty"
+          <|\()->
+            let
+              isEmpty=
+                PairDict.emptyOrMore
+                  { ifEmpty= True
+                  , ifMore= \_ _-> False
+                  }
+            in
+            Expect.true "isEmpty for filled False else True"
+              ((&&)
+                (isEmpty empty)
+                (not (isEmpty of2))
+              )
+        , test "most recently inserted"
+          <|\()->
+            let
+              mostRecentlyInserted=
+                PairDict.emptyOrMore
+                  { ifMore= \pair _-> Just pair
+                  , ifEmpty= Nothing
+                  }
+            in
+            mostRecentlyInserted
+              (PairDict.fromList [ ( 'a', 'A' ), ( 'b', 'B' ) ])
+            |>Expect.equal
+                (Just ( 'b', 'B' ))
+        ]
     ]
 
-pairDictInTest: Test
-pairDictInTest=
+inPairDictTest: Test
+inPairDictTest=
   describe "in"
     [ describe "insert"
         [ test "insert is ignored for duplicates"
@@ -277,8 +297,8 @@ pairDictInTest=
             )
     ]
 
-pairDictOutTest: Test
-pairDictOutTest=
+outPairDictTest: Test
+outPairDictTest=
   describe "out"
     [ test "add and remove left leaves it unchanged"
       <|\()->
@@ -295,8 +315,8 @@ pairDictOutTest=
     ]
 
 
-pairDictShapeTest: Test
-pairDictShapeTest=
+shapePairDictTest: Test
+shapePairDictTest=
   describe "shape"
     [ test "lefts are the same as of the list"
       <|\()->
