@@ -6,7 +6,7 @@ Let's compare
 
 ### normal `Dict`
 
-> you want `🔑 1`?
+> You want `🔑 1`?
 
         ( 🔑 0, 🌳 )
       → ( 🔑 1, 🍐 )
@@ -18,7 +18,7 @@ Let's compare
 
 ### `PairDict`
 
-> you want the left value of `🗝️ 1` and the right value of `🔑 0`?
+> You want the left value of `🗝️ 1` and the right value of `🔑 0`?
 
       → ( 🔑 0, 🗝️ 2 )
         ( 🔑 2, 🗝️ 0 )

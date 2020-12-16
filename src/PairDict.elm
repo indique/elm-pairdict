@@ -40,7 +40,7 @@ import Json.Decode as Decode exposing (Decoder)
 
 {-| Want to look up value-pairs from the left or the right?
 
-> you want the left value of `🗝️ 1` and the right value of `🔑 0`?
+> You want the left value of `🗝️ 1` and the right value of `🔑 0`?
 
       → ( 🔑 0, 🗝️ 2 )
         ( 🔑 2, 🗝️ 0 )
