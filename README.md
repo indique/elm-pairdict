@@ -36,10 +36,10 @@ Let's compare
 ## Example: cased letters
 ```elm
 lowerUppercaseLetters=
-  empty
-  |>insert ( 'a', 'A' )
-  |>insert ( 'b', 'B' )
-  |>insert ( 'c', 'C' )
+  PairDict.empty
+  |>PairDict.insert ( 'a', 'A' )
+  |>PairDict.insert ( 'b', 'B' )
+  |>PairDict.insert ( 'c', 'C' )
 
 upperCase char=
   rightOf char lowerUppercaseLetters
@@ -53,13 +53,15 @@ type Element=
   Hydrogen
   | Helium
 
-elementPair { element, atomicNumber }=
+pairFromElementAndAtomicNumber { element, atomicNumber }=
   ( element, protonCount )
 
 elementAtomicNumberPairdict=
-  empty
-  |>insert ({ element= Hydrogen, atomicNumber= 1 } |>elementPair)
-  |>insert ({ element= Helium, atomicNumber= 2 } |>elementPair)
+  [ { element= Hydrogen, atomicNumber= 1 }
+  , { element= Helium, atomicNumber= 2 }
+  ]
+  |>List.map pairFromElementAndAtomicNumber
+  |>PairDict.fromList
 
 atomicNumberByElement=
   toDict elementAtomicNumberPairdict
@@ -69,9 +71,9 @@ atomicNumberByElement=
 You have pairs that belong together:
 ```elm
 brackets=
-  empty
-  |>insert ( '(', ')' )
-  |>insert ( '{', '}' )
+  PairDict.empty
+  |>PairDict.insert ( '(', ')' )
+  |>PairDict.insert ( '{', '}' )
 
 typeChar character=
   case leftOf character brackets of
@@ -96,7 +98,7 @@ typeChar character=
 ## Example: automatic answers
 ```elm
 answers=
-  fromList
+  PairDict.fromList
     [ ( "Hi", "Hi there!" )
     , ( "Bye", "Ok, have a nice day and spread some love.")
     , ( "How are you", "I don't have feelings :(" )
@@ -108,7 +110,7 @@ please use a `Dict` where it is more appropriate: **`Dict`s are for one-way acce
 ## Example: translation, synonymes...
 ```elm
 englishGerman=
-  fromList
+  PairDict.fromList
     [ ( "elm", "Ulme" )
     , ( "git", "Schwachkopf" )
     ]
@@ -121,9 +123,9 @@ Please take a look at [elm-bidict](https://github.com/Janiczek/elm-bidict)
 ## Example: partners, opposites...
 ```elm
 partners=
-  empty
-  |>insert ( "Ann", "Alan" )
-  |>insert ( "Alex", "Alastair" )
-  |>insert ( "Alan", "Ann" ) --wait, this is no duplicate and gets inserted?
+  PairDict.empty
+  |>PairDict.insert ( "Ann", "Alan" )
+  |>PairDict.insert ( "Alex", "Alastair" )
+  |>PairDict.insert ( "Alan", "Ann" ) --wait, this is no duplicate and gets inserted?
 ```
 A `PairDict` ony makes sense, when the **left & right sides describe something different**.
