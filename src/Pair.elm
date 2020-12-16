@@ -7,15 +7,15 @@ module Pair exposing
 {-|
 @docs Pair
 
-### create
+## create
+through the constructor or through
+
 @docs decode
 
-or through the constructor
-
-### access
+## access
 @docs leftIn, rightIn
 
-### shape
+## shape
 @docs mapLeft, mapRight, map, encode
 -}
 
