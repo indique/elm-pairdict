@@ -29,7 +29,7 @@ Let's compare
         🔑 1 and 🗝️ 2
 
 
-<br><br>
+<br>
 
 ## 👍 How to `PairDict`
 
