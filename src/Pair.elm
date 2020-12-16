@@ -1,7 +1,7 @@
 module Pair exposing
   ( Pair
   , leftIn, rightIn
-  , mapLeft, mapRight
+  , mapLeft, mapRight, map
   , encode, decode
   )
 {-|
@@ -16,7 +16,7 @@ or through the constructor
 @docs leftIn, rightIn
 
 ### shape
-@docs mapLeft, mapRight, encode
+@docs mapLeft, mapRight, map, encode
 -}
 
 import Json.Encode as Encode
