@@ -115,7 +115,7 @@ empty=
   Pairs []
 
 {-| Create a `PairDict` from a association-`Dict`. `left` is the key, `right` is the value.
-If multiple equal keys or values are present, the value **first** in the `Dict` is **prefered**.
+If multiple equal keys or values are present, the value **first** in the `Dict` is **prefered** (see `insert`).
     
     lowerToUpperLetters=
       AssocList.empty
@@ -133,8 +133,8 @@ fromDict=
     (\k v-> insert ( k, v ))
     empty
 
-{-| Create a `PairDict` _conveniently_ from `Tuple`s. `left` is the first, `right` is the second.
-If right or left values are given multiple times, the value **first** in the `List` is **prefered**.
+{-| Create a `PairDict` _conveniently_ from `Pair`s.
+If right or left values are given multiple times, the value **first** in the `List` is **prefered** (see `insert`).
     
     PairDict.fromList
       [ ( 'b', 'B' ) --insert ( 'b', 'B' )
@@ -150,7 +150,7 @@ fromList=
   List.foldl insert empty
 
 
-{-| `Just` the right value if the left value is present in the `PairDict`, else `Nothing`
+{-| `Just` the right value if `left` is present in the `PairDict`, else `Nothing`
 
     casedLetters=
       PairDict.empty
@@ -176,7 +176,7 @@ rightOf left=
               rightOf left rest
     }
 
-{-| `Just` the right value if the left value is present in the `PairDict`, else `Nothing`
+{-| `Just` the left value if `right` is present in the `PairDict`, else `Nothing`
 
     casedLetters=
       PairDict.empty
@@ -249,8 +249,8 @@ emptyOrMore
     
     meaninglessNumbers=
       PairDict.fromList
-        (List.range 0 41
-        |>List.map (\i-> ( i, i ))
+        (List.map (\i-> ( i, i ))
+          (List.range 0 41)
         )
     PairDict.size meaninglessNumbers
 > `42`
@@ -259,7 +259,7 @@ size: PairDict left right ->Int
 size (Pairs pairs)=
   List.length pairs
 
-{-| Values on the left.
+{-| Values on the left of all `Pair`s.
 
     brackets=
       PairDict.fromList
@@ -270,7 +270,7 @@ lefts: PairDict left right ->List left
 lefts (Pairs pairs)=
   List.map leftIn pairs
 
-{-| Values on the right.
+{-| Values on the right of all `Pair`s.
 
     brackets=
       PairDict.fromList
@@ -295,12 +295,17 @@ leftMember left=
 
 If either **value** is already **present**, the `PairDict` is **unchanged**.
 
-    empty
-    |>insert ( 'b', 'B' ) --puts it in 
-    |>insert ( 'a', 'A' ) --puts it in
-    |>insert ( 'b', 'C' ) --ignored, the left value already exists
-    |>insert ( 'c', 'A' ) --ignored, the right value already exists
-    |>insert ( 'c', 'C' ) --puts it in
+    PairDict.empty
+    |>PairDict.insert ( 'b', 'B' )
+        --puts it in 
+    |>PairDict.insert ( 'a', 'A' )
+        --puts it in
+    |>PairDict.insert ( 'b', 'C' )
+        --ignored, the left value already exists
+    |>PairDict.insert ( 'c', 'A' )
+        --ignored, the right value already exists
+    |>PairDict.insert ( 'c', 'C' )
+        --puts it in
 -}
 insert:
   Pair left right
@@ -319,8 +324,8 @@ insert pair ((Pairs pairs) as pairDict)=
       Pairs (pair ::pairs)
 
 
-{-| Merge 2 `PairDict`s.
-If a value on the left or right is present, prefer the last `PairDict`.
+{-| Combine 2 `PairDict`s, so that the `Pair`s in `toInsert` get inserted into `preferred`.
+If a value on the left or right is present, prefer the last `PairDict` (see `insert`).
 
     numberNamedOperators=
       PairDict.fromList
@@ -342,12 +347,13 @@ union:
   PairDict left right
   ->PairDict left right
   ->PairDict left right
-union added preferred=
-  fold insert preferred added
+union toInsert preferred=
+  (fold insert preferred) toInsert
 
-{-| Reduce the left-right `Pair`s from most recently inserted
-to least recently inserted.
-A fold in the other direction doesn't exist, as association-`Dict`s should rarely rely on order (see `equal`)
+{-| Reduce the left-right `Pair`s
+from most recently inserted to least recently inserted.
+
+A fold in the other direction doesn't exist, as association-`Dict`s should rarely rely on order (see `equal`).
 
     brackets=
       PairDict.empty
@@ -373,7 +379,7 @@ fold reduce initial (Pairs pairs)=
       initial
 
 
-{-| remove left-right pair.
+{-| Remove the left-right `Pair` at `left`.
 If **`left` does not exist**, the `PairDict` is **unchanged**
 
     PairDict.empty
@@ -392,7 +398,7 @@ removeLeft left (Pairs pairs)=
   List.filter (leftIn >>(/=) left) pairs
   |>Pairs
 
-{-| remove left-right pair.
+{-| Remove the left-right `Pair` at `right`.
 If `right` does not exist, the `PairDict` is unchanged
 
     PairDict.empty
@@ -412,7 +418,7 @@ removeRight right (Pairs pairs)=
   |>Pairs
   
 
-{-| map pairs
+{-| Map `Pair`s. Take a look at `Pair`'s map operations.
 
     digitNames=
       PairDict.empty
@@ -434,13 +440,13 @@ map alter=
   fold (alter >>insert) empty
 
 
-{-| Convert to an association-`Dict`, which you can access only from the left
+{-| Convert a `PairDict` to an association-`Dict`, which you can **access** only **from the left**.
 
     casedLetters=
       PairDict.fromList
         [ ( 'A', 'a' ), ( 'B', 'b' ) ]
     lowerFromUpper=
-      casedLetters |>dictFromLeft
+      PairDict.toDict casedLetters
 -}
 toDict:
   PairDict left right ->AssocDict.Dict left right
@@ -451,7 +457,9 @@ toDict=
 
 
 
---for encoding / decoding: https://ellie-app.com/bNL2HsCtswQa1
+{-to contributers:
+  for encoding / decoding: https://ellie-app.com/bPXzkZZHwyQa1
+-}
 {-| all left-right-`Pair`s. **Not exposed**
 -}
 toPairs:
