@@ -54,17 +54,19 @@ type Element=
   | Helium
 
 pairFromElementAndAtomicNumber { element, atomicNumber }=
-  ( element, protonCount )
+  ( element, atomicNumber )
 
 elementAtomicNumberPairdict=
-  [ { element= Hydrogen, atomicNumber= 1 }
-  , { element= Helium, atomicNumber= 2 }
-  ]
-  |>List.map pairFromElementAndAtomicNumber
-  |>PairDict.fromList
+  PairDict.fromList
+    (List.map pairFromElementAndAtomicNumber
+      [ { element= Hydrogen, atomicNumber= 1 }
+      , { element= Helium, atomicNumber= 2 }
+      ]
+    )
 
 atomicNumberByElement=
-  toDict elementAtomicNumberPairdict
+  PairDict.toDict
+    elementAtomicNumberPairdict
 ```
 
 ## Example: brackets
