@@ -502,7 +502,7 @@ encode encodeLeft encodeRight=
   >>Encode.list
       (Pair.encode encodeLeft encodeRight)
 
-{-| A `Json.Decode.Decoder` for `PairDict`s, encoded by `encodePair`.
+{-| A `Json.Decode.Decoder` for `PairDict`s encoded by `encodePair`.
 
 The order of insertion is not reconstructed (see `equal`)
 

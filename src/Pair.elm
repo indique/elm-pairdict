@@ -158,7 +158,7 @@ encode encodeLeft encodeRight ( left, right )=
     , ( "right", encodeRight right )
     ]
 
-{-| A `Json.Decode.Decoder` for `Pair`s, encoded by `encodePair`
+{-| A `Json.Decode.Decoder` for `Pair`s encoded by `encodePair`
     
     """
     {
