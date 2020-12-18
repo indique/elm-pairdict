@@ -6,27 +6,27 @@ Let's compare
 
 ### normal `Dict`
 
-> You want `🔑 1`?
+> You want the `🏠` where the `🔑` is `1`?
 
-        ( 🔑 0, 🌳 )
-      → ( 🔑 1, 🍐 )
-        ( 🔑 2, 🍐 )
+        < 🔑= 0, 🏠= 🌳 |
+      → < 🔑= 1, 🏠= 🍐 |
+        < 🔑= 2, 🏠= 🍐 |
 
-> Going through while comparing your key... Ah! Here it is:
+> Going through while comparing your `🔑`... Ah! Here it is:
 
         🍐
 
 ### `PairDict`
 
-> You want the left value of `🗝️ 1` and the right value of `🔑 0`?
+> You want the pair where `🗝️` is `1` and the pair where `🔑` is `0`?
 
-      → ( 🔑 0, 🗝️ 2 )
-        ( 🔑 2, 🗝️ 0 )
-        ( 🔑 1, 🗝️ 1 ) ←
+      → < 🔑= 0, 🗝️= 2 >
+        < 🔑= 2, 🗝️= 0 >
+        < 🔑= 1, 🗝️= 1 > ←
 
-> Going through while checking, if your key is equal... Ah! Here they are:
+> Going through while checking every pair, if `🗝️` is equal, then, if `🔑` is equal... Ah! Here they are:
 
-        🔑 1 and 🗝️ 2
+        🔑 is 1 where 🗝️ is 1  and   🗝️ is 2 where 🔑 is 0
 
 &nbsp;
 
@@ -35,14 +35,21 @@ Let's compare
 
 ## Example: cased letters
 ```elm
-lowerUppercaseLetters=
-  PairDict.empty
-  |>PairDict.insert ( 'a', 'A' )
-  |>PairDict.insert ( 'b', 'B' )
-  |>PairDict.insert ( 'c', 'C' )
+type alias CasedLetter=
+  { lowercase: Char
+  , uppercase: Char
+  }
 
-upperCase char=
-  rightOf char lowerUppercaseLetters
+lowerUppercaseLetters: PairDict CasedLetter Char Char
+lowerUppercaseLetters=
+  PairDict.empty .lowercase .uppercase
+  |>PairDict.putIn { lowercase= 'a', uppercase= 'A' }
+  |>PairDict.putIn { lowercase= 'b', uppercase= 'B' }
+  |>PairDict.putIn { lowercase= 'c', uppercase= 'C' }
+
+uppercase char=
+  PairDict.access .lowercase char lowerUppercaseLetters
+  |>Maybe.map .uppercase
 ```
 try in the [ellie for the example cased letters](https://ellie-app.com/bPdTNBJ3XSya1)
 
@@ -53,16 +60,11 @@ type Element=
   Hydrogen
   | Helium
 
-pairFromElementAndAtomicNumber { element, atomicNumber }=
-  ( element, atomicNumber )
-
 elementAtomicNumberPairdict=
-  PairDict.fromList
-    (List.map pairFromElementAndAtomicNumber
-      [ { element= Hydrogen, atomicNumber= 1 }
-      , { element= Helium, atomicNumber= 2 }
-      ]
-    )
+  PairDict.fromList .element .atomicNumber
+    [ { element= Hydrogen, atomicNumber= 1 }
+    , { element= Helium, atomicNumber= 2 }
+    ]
 
 atomicNumberByElement=
   PairDict.toDict
@@ -73,22 +75,27 @@ atomicNumberByElement=
 You have pairs that belong together:
 ```elm
 brackets=
-  PairDict.empty
-  |>PairDict.insert ( '(', ')' )
-  |>PairDict.insert ( '{', '}' )
+  PairDict.empty .opening .closing
+  |>PairDict.putIn { opening= '(', closing= ')' }
+  |>PairDict.putIn { opening= '{', closing= '}' }
 
 typeChar character=
-  case leftOf character brackets of
-    Just opening->
-      String.fromList [ opening, character ]
-
-    Nothing->
-      case rightOf character brackets of
-        Just closing->
-          String.fromList [ character, closing ]
-
-        Nothing->
-          String.fromChar character
+  brackets
+  |>PairDict.access .open character
+  |>Maybe.map
+      (\{ closed }->
+        String.fromList [ character, closed ]
+      )
+  |>Maybe.withDefault
+      (brackets
+      |>PairDict.access .closed character
+      |>Maybe.map
+          (\{ open }->
+            String.fromList [ open, character ]
+          )
+      |>Maybe.withDefault
+          (String.fromChar character)
+      )
 
 "Typing (: " ++(typeChar '(') ++". Even }: " ++(typeChar '}')
 ```
@@ -100,11 +107,13 @@ typeChar character=
 ## Example: automatic answers
 ```elm
 answers=
-  PairDict.fromList
-    [ ( "Hi", "Hi there!" )
-    , ( "Bye", "Ok, have a nice day and spread some love.")
-    , ( "How are you", "I don't have feelings :(" )
-    , ( "Are you a robot", "I think the most human answer is 'Haha... yes'" )
+  PairDict.fromList .youSay .answer
+    [ { youSay= "Hi", answer= "Hi there!" }
+    , { youSay= "Bye", answer=  "Ok, have a nice day and spread some love." }
+    , { youSay= "How are you", answer= "I don't have feelings :(" }
+    , { youSay= "Are you a robot"
+      , answer= "I think the most human answer is 'Haha... yes'"
+      }
     ]
 ```
 please use a `Dict` where it is more appropriate: **`Dict`s are for one-way access**
@@ -112,9 +121,10 @@ please use a `Dict` where it is more appropriate: **`Dict`s are for one-way acce
 ## Example: translation, synonymes...
 ```elm
 englishGerman=
-  PairDict.fromList
-    [ ( "elm", "Ulme" )
-    , ( "git", "Schwachkopf" )
+  PairDict.fromList .english .german
+    [ { english= "elm", german= "Ulme" }
+    , { english= "git", german= "Schwachkopf" }
+    , { german= "Rüster", english= "elm" }
     ]
 ```
 A right → left and backwards relationship is only fitting,
@@ -123,11 +133,14 @@ when **left or right don't have multiple translations**.
 Please take a look at [elm-bidict](https://github.com/Janiczek/elm-bidict)
 
 ## Example: partners, opposites...
+
+Similar to the previous example:
 ```elm
 partners=
   PairDict.empty
-  |>PairDict.insert ( "Ann", "Alan" )
-  |>PairDict.insert ( "Alex", "Alastair" )
-  |>PairDict.insert ( "Alan", "Ann" ) --wait, this is no duplicate and gets inserted?
+  |>PairDict.putIn { partner= "Ann", partnerOfPartner= "Alan" }
+  |>PairDict.putIn { partner= "Alex", partnerOfPartner= "Alastair" }
+  |>PairDict.putIn { partner= "Alan", partnerOfPartner= "Ann" }
+      --wait, this is no duplicate and gets putIned?
 ```
 A `PairDict` ony makes sense, when the **left & right sides describe something different**.
