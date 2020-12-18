@@ -51,7 +51,7 @@ uppercase char=
   PairDict.access .lowercase char lowerUppercaseLetters
   |>Maybe.map .uppercase
 ```
-try in the [ellie for the example cased letters](https://ellie-app.com/bPdTNBJ3XSya1)
+try in the [ellie for the example cased letters](https://ellie-app.com/bQtcqGFXrgza1)
 
 ## Example: periodic table
 
