@@ -1,3 +1,7 @@
+> ## NOTE, usage DISCOURAGED: use [elm-keysdict](https://github.com/indique/elm-keysdict), which allows for multi-directional access
+
+&nbsp;
+
 # PairDict
 Lookup value-pairs from the left or the right.
 
