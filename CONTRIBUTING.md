@@ -1,9 +1,6 @@
 ## Contribute
 
-**Contribution of any kind is appreciated! 💙**
-
-* Changes may be suggested through pull requests.
-* To discuss major changes, open up a feature request issue.
+> ## NOTE, usage DISCOURAGED: use [elm-keysdict](https://github.com/indique/elm-keysdict), which allows for multi-directional access
 
 ### Summary Guide
 
