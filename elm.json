@@ -3,7 +3,7 @@
     "name": "indique/elm-pairdict",
     "summary": "lookup value-pairs from the left or the right",
     "license": "MIT",
-    "version": "6.0.2",
+    "version": "6.0.3",
     "exposed-modules": [
         "PairDict"
     ],
