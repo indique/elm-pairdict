@@ -1,4 +1,4 @@
-> ## NOTE, usage DISCOURAGED: use [elm-keysdict](https://github.com/indique/elm-keysdict), which allows for multi-directional access
+> **usage DISCOURAGED: use [lue-bird/elm-keysset](https://package.elm-lang.org/packages/lue-bird/elm-keysset/latest/), which allows for multiple keys**
 
 &nbsp;
 
